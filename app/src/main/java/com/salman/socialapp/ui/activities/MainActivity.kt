@@ -1,4 +1,4 @@
-package com.salman.socialapp.ui.activites
+package com.salman.socialapp.ui.activities
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
