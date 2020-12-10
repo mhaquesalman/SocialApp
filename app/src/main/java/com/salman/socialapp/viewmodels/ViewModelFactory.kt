@@ -10,7 +10,6 @@ import java.lang.IllegalArgumentException
 class ViewModelFactory: ViewModelProvider.NewInstanceFactory() {
 
     var repository: Repository? = null
-
     init {
         val apiService = ApiClient.getRetrofit()?.create(ApiService::class.java)
         repository = Repository.getRepository(apiService)
@@ -21,6 +20,10 @@ class ViewModelFactory: ViewModelProvider.NewInstanceFactory() {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
             return LoginViewModel(repository) as T
+        } else if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
+            return ProfileViewModel(repository) as T
+        } else if (modelClass.isAssignableFrom(PostUploadViewModel::class.java)) {
+            return PostUploadViewModel(repository) as T
         }
         throw IllegalArgumentException("ViewModel not found !")
     }

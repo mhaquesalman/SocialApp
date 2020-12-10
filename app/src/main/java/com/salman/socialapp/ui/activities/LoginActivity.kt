@@ -22,7 +22,8 @@ import com.salman.socialapp.R
 import com.salman.socialapp.model.UserInfo
 import com.salman.socialapp.viewmodels.LoginViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
-import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_login.*
+
 
 private const val TAG = "LoginActivity"
 private const val RC_SIGN_IN = 50

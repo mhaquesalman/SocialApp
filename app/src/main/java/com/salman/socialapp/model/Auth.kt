@@ -1,10 +1,10 @@
 package com.salman.socialapp.model
 
-class Auth(
-    val uid: String?,
-    val name: String?,
-    val email: String?,
-    val profleUrl: String?,
-    val coverUrl: String?,
-    val userToken: String?
+data class Auth(
+    val uid: String? = null,
+    val name: String? = null,
+    val email: String? = null,
+    val profleUrl: String? = null,
+    val coverUrl: String? = null,
+    val userToken: String? = null
 )
