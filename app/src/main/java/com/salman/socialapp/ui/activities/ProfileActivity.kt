@@ -29,6 +29,7 @@ import kotlinx.android.synthetic.main.activity_profile.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.IOException
 
@@ -48,8 +49,9 @@ class ProfileActivity : AppCompatActivity() {
     private var coverUrl: String? = ""
     private var currentState = 0
     private var isCoverImage = false
+    private var isImageSelected = false
     private var isNameChanged = false
-    private var enteredName: String? = ""
+    private var enteredName: String? = null
     var compressedImageFile: File? = null
     lateinit var profileViewModel: ProfileViewModel
     lateinit var progressDialog: ProgressDialog
@@ -208,17 +210,22 @@ class ProfileActivity : AppCompatActivity() {
         val builder = MultipartBody.Builder().apply {
             setType(MultipartBody.FORM)
             addFormDataPart("uid", FirebaseAuth.getInstance().uid.toString())
-            addFormDataPart("isCoverImage", isCoverImage.toString())
 
-            if (compressedImageFile != null) {
-                val createRequestBody =
-                    RequestBody.create("multipart/form-data".toMediaTypeOrNull(), compressedImageFile)
-                addFormDataPart("file", compressedImageFile.name, createRequestBody)
+            compressedImageFile?.let { imageFile ->
+                addFormDataPart("isCoverImage", isCoverImage.toString())
+
+                val createRequestBody = RequestBody.create("multipart/form-data".toMediaTypeOrNull(), imageFile)
+
+                // alternate to RequestBody.create() method
+//              val createRequestBody = imageFile.asRequestBody("multipart/form-data".toMediaTypeOrNull())
+
+                addFormDataPart("file", imageFile.name, createRequestBody)
+                isImageSelected = true
             }
 
-            enteredName?.let {
-                if (it.trim().length > 0) {
-                    addFormDataPart("name", it)
+            enteredName?.let { name ->
+                if (name.trim().length > 0) {
+                    addFormDataPart("name", name)
                     isNameChanged = true
                 }
             }
@@ -230,6 +237,7 @@ class ProfileActivity : AppCompatActivity() {
 //          Toast.makeText(this, uploadResponse.message, Toast.LENGTH_LONG).show()
             Snackbar.make(rootView, uploadResponse.message+"", Snackbar.LENGTH_SHORT).show()
             if (uploadResponse.status == 200) {
+                if (isImageSelected) {
                     if (isCoverImage) {
                         Glide.with(this)
                             .load(BASE_URL + uploadResponse.extra)
@@ -239,12 +247,12 @@ class ProfileActivity : AppCompatActivity() {
                             .load(BASE_URL + uploadResponse.extra)
                             .into(profile_image)
                     }
-                    if (isNameChanged) {
-                        collapsing_toolbar.title = uploadResponse.extra
-                    }
                 }
+                if (isNameChanged) {
+                    collapsing_toolbar.title = uploadResponse.extra
+                }
+            }
         })
-
 
     }
 
@@ -258,8 +266,10 @@ class ProfileActivity : AppCompatActivity() {
                     val nameTxt = nameEditText.text.toString()
                     if (!nameTxt.isEmpty()) {
                         enteredName = nameTxt
+                        uploadImageWithName(null)
                     } else {
                         nameEditText.error = "field empty"
+                        nameEditText.requestFocus()
                     }
                 })
                 .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->  })
