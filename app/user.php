@@ -14,7 +14,7 @@ $app->post('/login', function ( $request,  $response, $args) {
     $requestData['coverUrl'] = $request->getParsedBody()['coverUrl'];
     $requestData['userToken'] = $request->getParsedBody()['userToken'];
 
-    $query = $pdo->prepare("SELECT `uid` from `user` WHERE `uid` = :uid LIMIT 1");
+    $query = $pdo->prepare("SELECT `uid` from `users` WHERE `uid` = :uid LIMIT 1");
     $query->bindparam(':uid', $requestData['uid']);
     $query->execute();
     $errorData = $query->errorInfo();
@@ -26,7 +26,7 @@ $app->post('/login', function ( $request,  $response, $args) {
 
     if($count==1){
         // update data because this user already exist
-    $query =$pdo->prepare("UPDATE `user` SET  
+    $query =$pdo->prepare("UPDATE `users` SET  
     `name` = :name, 
     `email` = :email,
     `profileUrl` = :profileUrl,
@@ -37,7 +37,7 @@ $app->post('/login', function ( $request,  $response, $args) {
     $errorData = $query->errorInfo();
     } else{
         // create user
-        $query = $pdo->prepare("INSERT INTO `user` 
+        $query = $pdo->prepare("INSERT INTO `users` 
         (`uid`, `name`, `email`, `profileUrl`, `coverUrl`,`userToken`) VALUES 
         (:uid, :name, :email, :profileUrl, :coverUrl, :userToken); ");
         $query->execute($requestData);
@@ -47,6 +47,15 @@ $app->post('/login', function ( $request,  $response, $args) {
     if($errorData[1]){
         return checkError($response, $errorData);
      }
+
+     $output['status'] = 200;
+     $output['message'] = "Login Sucess";
+     $output['auth'] = $requestData;
+ 
+     $payload = json_encode($output);
+     $response->getBody()->write($payload);
+ 
+     return $response->withHeader('Content-Type','application/json')->withStatus(200);
 });
 
 
@@ -73,7 +82,7 @@ $app->get('/loadprofileinfo', function($request, $response, $args) {
 
     }
 
-    $query = $pdo->prepare('SELECT * FROM `user` WHERE `uid` = :userId');
+    $query = $pdo->prepare('SELECT * FROM `users` WHERE `uid` = :userId');
 	$query->bindParam(':userId', $userId, PDO::PARAM_STR);
 	$query->execute();
     $errorData = $query->errorInfo();
@@ -99,54 +108,59 @@ $app->post('/uploadImage',function($request,  $response,  $args) {
 
     $msg = "";
 	$uid = $request->getParsedBody()['uid'];
-	$isCoverImage = $request->getParsedBody()['isCoverImage'];
+	
+    if(isset($_FILES['file']['tmp_name']) && isset($request->getParsedBody()['isCoverImage'])) {
 
+        if (move_uploaded_file( $_FILES ['file'] ["tmp_name"], "../uploads/" . $_FILES ["file"] ["name"] )) {
+        
+            $isCoverImage = $request->getParsedBody()['isCoverImage'];
 
-	if (move_uploaded_file( $_FILES ['file'] ["tmp_name"], "../uploads/" . $_FILES ["file"] ["name"] )) {
-		
-		if($isCoverImage=='true') {
-			$query ="UPDATE  `user` SET `coverUrl` = :uploadUrl WHERE `uid` = :uid; ";
-			$msg = "Cover Picture uploaded Successfully ";
-		} else {
-			$query = "UPDATE  `user` SET `profileurl` = :uploadUrl WHERE `uid` = :uid; ";
-			$msg = "Profile Picture uploaded Successfully ";
+            if($isCoverImage=='true') {
+                $query ="UPDATE  `users` SET `coverUrl` = :uploadUrl WHERE `uid` = :uid; ";
+                $msg = "Cover Picture uploaded Successfully ";
+            } else {
+                $query = "UPDATE  `users` SET `profileurl` = :uploadUrl WHERE `uid` = :uid; ";
+                $msg = "Profile Picture uploaded Successfully ";
+            }
+    
+            $imageLocation = "../uploads/" . $_FILES ["file"] ["name"];
+            $query = $pdo->prepare($query);
+            $query->bindParam(':uid', $uid, PDO::PARAM_STR);
+            $query->bindParam(':uploadUrl', $imageLocation, PDO::PARAM_STR);	 
+            $query->execute();
+            
+            $errorData = $query->errorInfo();
+            if($errorData[1]){
+                return checkError($response, $errorData);
+            }
+    
+            $output['status']  = 200;
+            $output['message'] = $msg;
+            $output['extra'] = $imageLocation;
+    
+            $payload = json_encode($output);
+            $response->getBody()->write($payload);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    
+        } else {
+            $output['status']  = 500;
+            $output['message'] = "Couldn't Upload Image to Server !";
+    
+            $payload = json_encode($output);
+            $response->getBody()->write($payload);
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
 
-		$imageLocation = "../uploads/" . $_FILES ["file"] ["name"];
-		$query = $pdo->prepare($query);
-		$query->bindParam(':uid', $uid, PDO::PARAM_STR);
-        $query->bindParam(':uploadUrl', $imageLocation, PDO::PARAM_STR);	 
-		$query->execute();
-		
-		$errorData = $query->errorInfo();
-		if($errorData[1]){
-			return checkError($response, $errorData);
-		}
-
-		$output['status']  = 200;
-		$output['message'] = $msg;
-		$output['extra'] = $imageLocation;
-
-		$payload = json_encode($output);
-		$response->getBody()->write($payload);
-		return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
-
-	} else{
-		
-		$output['status']  = 500;
-		$output['message'] = "Couldn't Upload Image to Server !";
-
-		$payload = json_encode($output);
-		$response->getBody()->write($payload);
-		return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     }
+
     
     if(isset($request->getParsedBody()['name'])) {
         $name = $request->getParsedBody()['name'];
-        $query = "UPDATE  `user` SET `name` = :name WHERE `uid` = :uid; ";
+        $query = "UPDATE  `users` SET `name` = :name WHERE `uid` = :uid; ";
         $msg = "Name Updated Successfully ";
 
         $query = $pdo->prepare($query);
+        $query->bindParam(':uid', $uid, PDO::PARAM_STR);
         $query->bindParam(':name', $name, PDO::PARAM_STR);
         $query->execute();
 
