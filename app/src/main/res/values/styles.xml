@@ -20,4 +20,11 @@
         <item name="android:colorBackground">#ffffff</item>
     </style>
 
+    <style name="searchViewTheme" parent="Widget.AppCompat.SearchView">
+        <item name="android:textColorPrimary">#FFF</item>
+        <item name="android:textColorHint">#FFF</item>
+        <item name="tint">#FFF</item>
+        <item name="android:gravity">end</item>
+    </style>
+
 </resources>

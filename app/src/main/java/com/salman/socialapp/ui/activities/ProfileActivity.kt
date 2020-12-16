@@ -62,10 +62,16 @@ class ProfileActivity : AppCompatActivity() {
 
         progressDialog = ProgressDialog(this)
         progressDialog.setCancelable(false)
-        progressDialog.setTitle("Loading...")
-        progressDialog.setMessage("Uploading Image...please wait")
+        progressDialog.setTitle("Loading")
+        progressDialog.setMessage("Please wait...")
 
         profileViewModel = ViewModelProvider(this, ViewModelFactory()).get(ProfileViewModel::class.java)
+
+        setSupportActionBar(toolbar)
+        toolbar.setNavigationIcon(R.drawable.ic_back)
+        toolbar.setNavigationOnClickListener {
+            super.onBackPressed()
+        }
 
         if (intent != null)
         userId = intent.getStringExtra(USER_ID)
@@ -73,7 +79,7 @@ class ProfileActivity : AppCompatActivity() {
         if (userId.equals(FirebaseAuth.getInstance().uid)) {
             currentState = 5
         } else {
-            action_btn.text = "Loading..."
+            action_btn.text = "Loading"
             action_btn.isEnabled = false
         }
 
@@ -99,9 +105,11 @@ class ProfileActivity : AppCompatActivity() {
             .putExtra("imageUrl", imageUrl)
 
         if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
-            val pairs = Pair<View, String>(imageview, imageUrl)
+//          var pairs: Array<Pair<View, String>> = arrayOf()
+//          pairs[0] = Pair<View, String>(imageview, imageUrl)
+            val pair = Pair<View, String>(imageview, imageUrl)
             val activityOptions =
-                ActivityOptions.makeSceneTransitionAnimation(this, pairs)
+                ActivityOptions.makeSceneTransitionAnimation(this, pair)
             startActivity(intent, activityOptions.toBundle())
         } else {
             startActivity(intent)
@@ -109,18 +117,24 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun fetchProfileInfo() {
+        progressDialog.show()
         val params = HashMap<String, String>()
         params.put("userId", FirebaseAuth.getInstance().uid!!)
         if (currentState == 5) {
             params.put("current_state", currentState.toString())
+        } else {
+            params.put("profileId", userId!!)
         }
 
         profileViewModel.fetchProfileInfo(params)?.observe(this, Observer { profileResponse ->
+            progressDialog.hide()
             if (profileResponse.status == 200) {
                 collapsing_toolbar.title = profileResponse.profile?.name
                 profileUrl = profileResponse.profile?.profileUrl
                 coverUrl = profileResponse.profile?.coverUrl
-                profileResponse.profile?.state?.let { currentState = it.toInt() }
+                profileResponse.profile?.state?.let {
+                    currentState = it.toInt()
+                }
 
                 if (!profileUrl!!.isEmpty()) {
                     val profileUri = Uri.parse(profileUrl)
@@ -142,12 +156,12 @@ class ProfileActivity : AppCompatActivity() {
                 }
                 when(currentState) {
                     0 -> {
-                        action_btn.text = "Loading.."
+                        action_btn.text = "Loading"
                         action_btn.isEnabled = false
                     }
                     1 -> action_btn.text = "Friends"
-                    2 -> action_btn.text = "Reject"
-                    3 -> action_btn.text = "Accept"
+                    2 -> action_btn.text = "Cancel Request"
+                    3 -> action_btn.text = "Accept Request"
                     4 -> action_btn.text = "Send Request"
                     5 -> action_btn.text = "Edit Profile"
                 }

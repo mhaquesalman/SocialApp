@@ -100,6 +100,7 @@ class PostUploadActivity : AppCompatActivity() {
                 Toast.makeText(this, postUploadResponse.message, Toast.LENGTH_LONG).show()
                 if (postUploadResponse.status == 200) {
                     startActivity(Intent(this, MainActivity::class.java))
+                    finish()
                 }
             })
         } else {

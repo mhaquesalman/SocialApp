@@ -1,12 +1,10 @@
 package com.salman.socialapp.repositories
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
-import com.salman.socialapp.model.AuthResponse
-import com.salman.socialapp.model.PostUploadResponse
-import com.salman.socialapp.model.ProfileResponse
-import com.salman.socialapp.model.UserInfo
+import com.salman.socialapp.model.*
 import com.salman.socialapp.network.ApiError
 import com.salman.socialapp.network.ApiService
 import okhttp3.MultipartBody
@@ -15,6 +13,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
 
+const val TAG = "Repository"
 class Repository(val apiService: ApiService?) {
 
     companion object {
@@ -39,7 +38,7 @@ class Repository(val apiService: ApiService?) {
                 } else {
                     val gson = Gson()
                     val authResponse = try {
-                        gson.fromJson(response.errorBody()?.toString(), AuthResponse::class.java)
+                        gson.fromJson(response.errorBody()?.string(), AuthResponse::class.java)
                     } catch (e: IOException) {
                         val errorMessage = ApiError.getErrorFromException(e)
                         AuthResponse(message = errorMessage.message, status = errorMessage.status)
@@ -114,5 +113,33 @@ class Repository(val apiService: ApiService?) {
             }
         })
         return postUploadLiveData
+    }
+
+    fun search(params: Map<String, String>): LiveData<SearchResponse> {
+        val searchLiveData: MutableLiveData<SearchResponse> = MutableLiveData()
+        val call = apiService?.search(params)
+        call?.enqueue(object : Callback<SearchResponse> {
+            override fun onResponse(call: Call<SearchResponse>, response: Response<SearchResponse>) {
+                if (response.isSuccessful) {
+                    searchLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val profileResponse = try {
+                        gson.fromJson(response.errorBody()?.toString(), SearchResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        SearchResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+                    searchLiveData.postValue(profileResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<SearchResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val searchResponse = SearchResponse(message = errorMessage.message, status = errorMessage.status)
+                searchLiveData.postValue(searchResponse)
+            }
+        })
+        return searchLiveData
     }
 }

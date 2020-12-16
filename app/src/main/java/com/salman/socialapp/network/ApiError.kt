@@ -28,6 +28,5 @@ object ApiError {
         }
     }
 
-    fun getErrorFromException(e: Exception) =
-        ErrorMessage(e.message, e.hashCode())
+    fun getErrorFromException(e: Exception) = ErrorMessage(e.message, e.hashCode())
 }

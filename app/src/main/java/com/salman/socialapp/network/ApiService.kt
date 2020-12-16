@@ -1,9 +1,6 @@
 package com.salman.socialapp.network
 
-import com.salman.socialapp.model.AuthResponse
-import com.salman.socialapp.model.PostUploadResponse
-import com.salman.socialapp.model.ProfileResponse
-import com.salman.socialapp.model.UserInfo
+import com.salman.socialapp.model.*
 import okhttp3.MultipartBody
 import retrofit2.Call
 import retrofit2.http.*
@@ -21,4 +18,7 @@ interface ApiService {
 
     @GET("loadprofileinfo")
     fun fetchProfileInfo(@QueryMap params: Map<String, String>): Call<ProfileResponse>
+
+    @GET("search")
+    fun search(@QueryMap params: Map<String, String>): Call<SearchResponse>
 }

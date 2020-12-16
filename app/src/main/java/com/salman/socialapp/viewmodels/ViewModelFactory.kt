@@ -18,13 +18,20 @@ class ViewModelFactory: ViewModelProvider.NewInstanceFactory() {
 
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(LoginViewModel::class.java)) {
-            return LoginViewModel(repository) as T
-        } else if (modelClass.isAssignableFrom(ProfileViewModel::class.java)) {
-            return ProfileViewModel(repository) as T
-        } else if (modelClass.isAssignableFrom(PostUploadViewModel::class.java)) {
-            return PostUploadViewModel(repository) as T
+        return when {
+            modelClass.isAssignableFrom(LoginViewModel::class.java) -> {
+                LoginViewModel(repository) as T
+            }
+            modelClass.isAssignableFrom(ProfileViewModel::class.java) -> {
+                ProfileViewModel(repository) as T
+            }
+            modelClass.isAssignableFrom(PostUploadViewModel::class.java) -> {
+                PostUploadViewModel(repository) as T
+            }
+            modelClass.isAssignableFrom(SearchViewModel::class.java) -> {
+                PostUploadViewModel(repository) as T
+            }
+            else -> throw IllegalArgumentException("ViewModel not found !")
         }
-        throw IllegalArgumentException("ViewModel not found !")
     }
 }

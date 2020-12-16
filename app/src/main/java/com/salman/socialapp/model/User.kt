@@ -1,6 +1,6 @@
 package com.salman.socialapp.model
 
-class UserInfo(
+data class User(
     val uid: String?,
     val name: String?,
     val email: String?,
@@ -8,4 +8,3 @@ class UserInfo(
     val coverUrl: String?,
     val userToken: String?
 )
-

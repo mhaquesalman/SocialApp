@@ -33,7 +33,7 @@
 
             <ImageView
                 android:layout_width="match_parent"
-                android:layout_height="370dp"
+                android:layout_height="350dp"
                 android:id="@+id/profile_cover"
                 android:adjustViewBounds="true"
                 android:paddingBottom="50dp"
@@ -50,7 +50,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:id="@+id/profile_image"
-                    android:scaleType="centerCrop"
+                    android:scaleType="fitCenter"
                     android:src="@drawable/default_profile_placeholder"/>
             </androidx.cardview.widget.CardView>
 
@@ -75,6 +75,7 @@
         <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
             android:layout_height="?android:attr/actionBarSize"
+            android:id="@+id/toolbar"
             app:layout_collapseMode="pin"
             app:titleMarginStart="0dp"
             app:title="Username"
