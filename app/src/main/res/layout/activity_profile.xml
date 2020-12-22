@@ -59,13 +59,16 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
-                android:layout_marginRight="10dp"
+                android:maxWidth="130dp"
+                android:layout_marginEnd="10dp"
                 android:layout_marginBottom="30dp"
                 android:background="@drawable/background_btn_radius"
                 android:minWidth="0dp"
                 android:minHeight="0dp"
                 android:padding="10dp"
                 android:text="Edit Profile"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:textAllCaps="false"
                 android:textSize="12sp"
                 app:layout_collapseMode="parallax" />
@@ -78,7 +81,7 @@
             android:id="@+id/toolbar"
             app:layout_collapseMode="pin"
             app:titleMarginStart="0dp"
-            app:title="Username"
+            app:title="Usernamjkljjkjlkjjkhe"
             style="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
 
     </com.google.android.material.appbar.CollapsingToolbarLayout>

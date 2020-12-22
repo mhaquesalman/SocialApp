@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="8dp"
+    android:layout_marginEnd="8dp"
+    android:layout_marginStart="8dp"
+    app:cardCornerRadius="3dp"
+    app:cardElevation="2dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingBottom="5dp"
+        android:paddingTop="5dp">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:layout_width="65dp"
+            android:layout_height="65dp"
+            android:id="@+id/profile_image"
+            android:layout_centerInParent="true"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentTop="true"
+            android:layout_marginStart="10dp"
+            android:src="@drawable/default_profile_placeholder" />
+
+        <TextView
+            android:id="@+id/profile_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@+id/profile_image"
+            android:fontFamily="sans-serif-condensed"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Person Name"
+            android:maxWidth="220dp"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            android:layout_centerInParent="true"
+            android:textColor="@color/cardview_dark_background"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/accept_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            style="@style/Widget.AppCompat.Button.Small"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="2dp"
+            android:text="Accept"
+            android:textAllCaps="false"
+            android:visibility="visible"
+            android:textColor="#FFF" />
+
+        <Button
+            android:id="@+id/cancel_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/accept_btn"
+            android:layout_alignParentEnd="true"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            style="@style/Widget.AppCompat.Button.Small"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp"
+            android:text="Cancel"
+            android:textAllCaps="false"
+            android:visibility="visible"
+            android:textColor="#FFF" />
+    </RelativeLayout>
+</androidx.cardview.widget.CardView>

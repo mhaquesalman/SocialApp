@@ -7,7 +7,7 @@ import com.salman.socialapp.network.ApiService
 import com.salman.socialapp.repositories.Repository
 import java.lang.IllegalArgumentException
 
-class ViewModelFactory: ViewModelProvider.NewInstanceFactory() {
+class ViewModelFactory : ViewModelProvider.NewInstanceFactory() {
 
     var repository: Repository? = null
     init {
@@ -29,7 +29,10 @@ class ViewModelFactory: ViewModelProvider.NewInstanceFactory() {
                 PostUploadViewModel(repository) as T
             }
             modelClass.isAssignableFrom(SearchViewModel::class.java) -> {
-                PostUploadViewModel(repository) as T
+                SearchViewModel(repository) as T
+            }
+            modelClass.isAssignableFrom(MainViewModel::class.java) -> {
+                MainViewModel(repository) as T
             }
             else -> throw IllegalArgumentException("ViewModel not found !")
         }

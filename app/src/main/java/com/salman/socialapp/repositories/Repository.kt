@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import com.salman.socialapp.model.*
 import com.salman.socialapp.network.ApiError
 import com.salman.socialapp.network.ApiService
@@ -12,6 +13,8 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
+import java.lang.reflect.Type
+
 
 const val TAG = "Repository"
 class Repository(val apiService: ApiService?) {
@@ -124,13 +127,13 @@ class Repository(val apiService: ApiService?) {
                     searchLiveData.postValue(response.body())
                 } else {
                     val gson = Gson()
-                    val profileResponse = try {
+                    val searchResponse = try {
                         gson.fromJson(response.errorBody()?.toString(), SearchResponse::class.java)
                     } catch (e: IOException) {
                         val errorMessage = ApiError.getErrorFromException(e)
                         SearchResponse(message = errorMessage.message, status = errorMessage.status)
                     }
-                    searchLiveData.postValue(profileResponse)
+                    searchLiveData.postValue(searchResponse)
 
                 }
             }
@@ -141,5 +144,63 @@ class Repository(val apiService: ApiService?) {
             }
         })
         return searchLiveData
+    }
+
+    fun performFriendAction(performAction: PerformAction): LiveData<GeneralResponse> {
+        val friendActionLiveData: MutableLiveData<GeneralResponse> = MutableLiveData()
+        val call = apiService?.performAction(performAction)
+        call?.enqueue(object : Callback<GeneralResponse> {
+            override fun onResponse(call: Call<GeneralResponse>, response: Response<GeneralResponse>) {
+                if (response.isSuccessful) {
+                    friendActionLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val generalResponse = try {
+                        gson.fromJson(response.errorBody()?.toString(), GeneralResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        GeneralResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+                    friendActionLiveData.postValue(generalResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<GeneralResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val generalResponse = GeneralResponse(message = errorMessage.message, status = errorMessage.status)
+                friendActionLiveData.postValue(generalResponse)
+            }
+        })
+        return friendActionLiveData
+    }
+
+    fun loadfriends(uid: String): MutableLiveData<FriendResponse> {
+        val friendRequestLiveData: MutableLiveData<FriendResponse> = MutableLiveData()
+        val call = apiService?.loadfriends(uid)
+        call?.enqueue(object : Callback<FriendResponse> {
+            override fun onResponse(call: Call<FriendResponse>, response: Response<FriendResponse>) {
+                if (response.isSuccessful) {
+                    friendRequestLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val friendResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), FriendResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        FriendResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    friendRequestLiveData.postValue(friendResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<FriendResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val friendResponse = FriendResponse(message = errorMessage.message, status = errorMessage.status)
+                friendRequestLiveData.postValue(friendResponse)
+            }
+        })
+        return friendRequestLiveData
     }
 }

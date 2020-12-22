@@ -21,6 +21,7 @@ import com.esafirm.imagepicker.features.ImagePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
+import com.salman.socialapp.model.PerformAction
 import com.salman.socialapp.network.BASE_URL
 import com.salman.socialapp.viewmodels.ProfileViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
@@ -37,11 +38,11 @@ class ProfileActivity : AppCompatActivity() {
 
 /*
 * 0 = profile is still loading
-* 1 = two people are friends
-* 2 = we have sent friend request to that user
-* 3 = we have received friend request from that user
-* 4 = we are not connected
-* 5 = own profile
+* 1 = two people are friends (unfriend)
+* 2 = we have sent friend request to that user (cancel request)
+* 3 = we have received friend request from that user (accept/cancel request)
+* 4 = we are not connected (send request)
+* 5 = own profile (edit profile)
  */
 
     private var userId: String? = ""
@@ -161,7 +162,7 @@ class ProfileActivity : AppCompatActivity() {
                     }
                     1 -> action_btn.text = "Friends"
                     2 -> action_btn.text = "Cancel Request"
-                    3 -> action_btn.text = "Accept Request"
+                    3 -> action_btn.text = "Accept or Cancel"
                     4 -> action_btn.text = "Send Request"
                     5 -> action_btn.text = "Edit Profile"
                 }
@@ -180,6 +181,7 @@ class ProfileActivity : AppCompatActivity() {
                 val options: Array<CharSequence> = arrayOf("Change Cover Image", "Change Profile Image", "Change User Name")
                 val builder = AlertDialog.Builder(this).apply {
                     setTitle("Choose Options")
+                    setCancelable(false)
                     setItems(options, DialogInterface.OnClickListener { dialogInterface, position ->
                         if (position == 0) {
                             isCoverImage = true
@@ -191,6 +193,84 @@ class ProfileActivity : AppCompatActivity() {
                             showNameChangeDialog()
                         }
                     })
+                    setNegativeButton("Cancel", null)
+                }
+                val dialog = builder.create()
+                dialog.setOnDismissListener {
+                    action_btn.isEnabled = true
+                }
+                dialog.show()
+            } else if (currentState == 4) {
+                val options: Array<CharSequence> = arrayOf("Send Friend Request")
+                val builder = AlertDialog.Builder(this).apply {
+                    setTitle("Choose Options")
+                    setCancelable(false)
+                    setItems(options, DialogInterface.OnClickListener { dialogInterface, position ->
+                        if (position == 0) {
+                            performFriendAction()
+                        }
+                    })
+                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
+
+                    })
+                }
+                val dialog = builder.create()
+                dialog.setOnDismissListener {
+                    action_btn.isEnabled = true
+                }
+                dialog.show()
+            } else if (currentState == 3) {
+                val options: Array<CharSequence> = arrayOf("Accept Friend Request", "Cancel Friend Request")
+                val builder = AlertDialog.Builder(this).apply {
+                    setTitle("Choose Options")
+                    setCancelable(false)
+                    setItems(options, DialogInterface.OnClickListener { dialogInterface, position ->
+                        if (position == 0) {
+                            performFriendAction()
+                        } else {
+                            currentState = 2
+                            performFriendAction()
+                        }
+                    })
+                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
+
+                    })
+                }
+                val dialog = builder.create()
+                dialog.setOnDismissListener {
+                    action_btn.isEnabled = true
+                }
+                dialog.show()
+            } else if (currentState == 2) {
+                val options: Array<CharSequence> = arrayOf("Cancel Friend Request")
+                val builder = AlertDialog.Builder(this).apply {
+                    setTitle("Choose Options")
+                    setItems(options, DialogInterface.OnClickListener { dialogInterface, position ->
+                        if (position == 0) {
+                            performFriendAction()
+                        }
+                    })
+                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
+                        dialogInterface.dismiss()
+                    })
+                }
+                val dialog = builder.create()
+                dialog.setOnDismissListener {
+                    action_btn.isEnabled = true
+                }
+                dialog.show()
+            } else if (currentState == 1) {
+                val options: Array<CharSequence> = arrayOf("Unfriend")
+                val builder = AlertDialog.Builder(this).apply {
+                    setTitle("Choose Options")
+                    setItems(options, DialogInterface.OnClickListener { dialogInterface, position ->
+                        if (position == 0) {
+                            performFriendAction()
+                        }
+                    })
+                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
+                        dialogInterface.dismiss()
+                    })
                 }
                 val dialog = builder.create()
                 dialog.setOnDismissListener {
@@ -199,6 +279,36 @@ class ProfileActivity : AppCompatActivity() {
                 dialog.show()
             }
         }
+    }
+
+    private fun performFriendAction() {
+        progressDialog.show()
+        val performAction = PerformAction(currentState.toString(), FirebaseAuth.getInstance().uid, userId)
+        profileViewModel.performFriendAction(performAction)?.observe(this, Observer { generalResponse ->
+            progressDialog.hide()
+//            Toast.makeText(this, generalResponse.message, Toast.LENGTH_LONG).show()
+            Snackbar.make(rootView, generalResponse.message+"", Snackbar.LENGTH_LONG).show()
+            if (generalResponse.status == 200) {
+                action_btn.isEnabled = true
+                if (currentState == 4) {
+                    currentState = 2
+                    action_btn.text = "Cancel Request"
+                } else if (currentState == 3) {
+                    currentState = 1
+                    action_btn.text = "Friends"
+                } else if (currentState == 2) {
+                    currentState = 4
+                    action_btn.text = "Send Request"
+                } else if (currentState == 1) {
+                    currentState = 4
+                    action_btn.text = "Send Request"
+                }
+                else {
+                    action_btn.isEnabled = false
+                    action_btn.text = "Error"
+                }
+            }
+        })
     }
 
     private fun selectImage() {
@@ -249,7 +359,7 @@ class ProfileActivity : AppCompatActivity() {
         profileViewModel.uploadPost(multipartBody, true)?.observe(this, Observer { uploadResponse ->
             progressDialog.hide()
 //          Toast.makeText(this, uploadResponse.message, Toast.LENGTH_LONG).show()
-            Snackbar.make(rootView, uploadResponse.message+"", Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(rootView, uploadResponse.message+"", Snackbar.LENGTH_LONG).show()
             if (uploadResponse.status == 200) {
                 if (isImageSelected) {
                     if (isCoverImage) {

@@ -7,7 +7,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
-const val BASE_URL = "http://192.168.1.4/socialapp/public/"
+const val BASE_URL = "http://192.168.1.3/socialapp/public/"
 class ApiClient {
 
     companion object {

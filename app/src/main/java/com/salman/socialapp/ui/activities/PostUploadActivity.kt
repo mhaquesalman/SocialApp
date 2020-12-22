@@ -16,6 +16,7 @@ import com.bumptech.glide.Glide
 import com.esafirm.imagepicker.features.ImagePicker
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
+import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.PostUploadViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import id.zelory.compressor.Compressor
@@ -97,14 +98,14 @@ class PostUploadActivity : AppCompatActivity() {
             val multipartBody = builder.build()
             postUploadViewModel.uploadPost(multipartBody, false)?.observe(this, Observer { postUploadResponse ->
                 progressDialog.hide()
-                Toast.makeText(this, postUploadResponse.message, Toast.LENGTH_LONG).show()
+                showToast(postUploadResponse.message)
                 if (postUploadResponse.status == 200) {
                     startActivity(Intent(this, MainActivity::class.java))
                     finish()
                 }
             })
         } else {
-            Toast.makeText(this, "Status can't be empty !", Toast.LENGTH_SHORT).show()
+            showToast("Status can't be empty !", Toast.LENGTH_SHORT)
         }
     }
 

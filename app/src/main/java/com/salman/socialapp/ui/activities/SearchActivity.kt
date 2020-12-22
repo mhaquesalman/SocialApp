@@ -35,12 +35,10 @@ class SearchActivity : AppCompatActivity() {
         setupRecyclerView()
 
         search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-
             override fun onQueryTextSubmit(query: String): Boolean {
                 searchUsers(query)
                 return true
             }
-
             override fun onQueryTextChange(newText: String): Boolean {
                 if (newText.length > 2) {
                     searchUsers(newText)

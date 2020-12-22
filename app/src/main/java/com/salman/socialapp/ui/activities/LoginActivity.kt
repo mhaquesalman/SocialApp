@@ -20,6 +20,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.iid.FirebaseInstanceId
 import com.salman.socialapp.R
 import com.salman.socialapp.model.UserInfo
+import com.salman.socialapp.util.Utils
 import com.salman.socialapp.viewmodels.LoginViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import kotlinx.android.synthetic.main.activity_login.*
@@ -33,6 +34,7 @@ class LoginActivity : AppCompatActivity() {
     lateinit var googleSignInClient: GoogleSignInClient
     lateinit var loginViewModel: LoginViewModel
     lateinit var progressDialog: ProgressDialog
+    lateinit var userInfo: UserInfo
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,7 +97,7 @@ class LoginActivity : AppCompatActivity() {
                     Log.d(TAG, "signInWithCredential:success")
                     FirebaseInstanceId.getInstance().instanceId.addOnSuccessListener { instanceIdResult ->
                         val user = auth.currentUser
-                        val userInfo = UserInfo(
+                        userInfo = UserInfo(
                             user?.uid,
                             user?.displayName,
                             user?.email,
@@ -108,6 +110,7 @@ class LoginActivity : AppCompatActivity() {
                             Toast.makeText(this, authResponse.message, Toast.LENGTH_LONG).show()
                             if (authResponse.auth != null) {
                                 updateUI(user)
+                                saveUserInSharedPref(userInfo)
                             } else {
                                 FirebaseAuth.getInstance().signOut()
                                 googleSignInClient.signOut()
@@ -122,6 +125,10 @@ class LoginActivity : AppCompatActivity() {
                     updateUI(null)
                 }
             }
+    }
+
+    private fun saveUserInSharedPref(userInfo: UserInfo) {
+        Utils(this).addUserToSharedPref(userInfo)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
