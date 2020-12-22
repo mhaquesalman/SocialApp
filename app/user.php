@@ -79,7 +79,27 @@ $app->get('/loadprofileinfo', function($request, $response, $args) {
     if(isset($request->getQueryParams()['current_state'])) {
         $state = $request->getQueryParams()['current_state'];
     } else {
-
+		$profileId = $request->getQueryParams()['profileId'];
+		
+        $request = checkRequest($userId,$profileId);
+        if($request) {
+			if($request['sender']==$userId){
+				// we have send the request
+				$state = "2";
+			}else{
+				$state="3";
+				//we have received the request
+			}
+		} else{
+			if(checkFriend($userId,$profileId)){
+				$state = "1";
+				//we are friends
+			}else{
+				$state="4";
+				//we are unknown to one another
+			}
+		}
+		$userId = $profileId;
     }
 
     $query = $pdo->prepare('SELECT * FROM `users` WHERE `uid` = :userId');
@@ -180,6 +200,49 @@ $app->post('/uploadImage',function($request,  $response,  $args) {
 	
 });
 
+// Api for search
+$app->get('/search',function($request,  $response,  $args){
+	include __DIR__ .'/../bootstrap/dbconnection.php';
+	$keyword = $request->getQueryParams()['keyword'];
+
+	$query = $pdo->prepare("SELECT * from users where name like '%$keyword%' limit 10");
+	$query->execute();
+	$errorData = $query->errorInfo();
+	if($errorData[1]){
+		return checkError($response, $errorData);
+	}
+
+	$results = $query->fetchAll(PDO::FETCH_ASSOC);
+
+	$output['status']  = 200;
+	$output['message'] = "Search";
+	$output['user'] = $results;
+
+	$payload = json_encode($output);
+	$response->getBody()->write($payload);
+	return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
+});
+
+
+function checkRequest($userId,$profileId){
+	include __DIR__ . '/../bootstrap/dbconnection.php';
+	$stmt = $pdo->prepare("SELECT * FROM `requests` WHERE `sender` = :userId AND `receiver` = :profileId 
+	OR `sender` = :profileId AND `receiver` = :userId");
+	$stmt->bindParam(':userId', $userId, PDO::PARAM_STR);
+	$stmt->bindParam(':profileId', $profileId, PDO::PARAM_STR);
+	$stmt->execute();
+	return $stmt->fetch(PDO::FETCH_ASSOC);
+}
+
+function checkFriend($userId,$profileId){
+	include __DIR__ . '/../bootstrap/dbconnection.php';
+	$stmt = $pdo->prepare("SELECT * FROM `friends` WHERE `userId` = :userId AND `profileId` = :profileId");
+	$stmt->bindParam(':userId', $userId, PDO::PARAM_STR);
+	$stmt->bindParam(':profileId', $profileId, PDO::PARAM_STR);
+	$stmt->execute();
+	return $stmt->fetch(PDO::FETCH_ASSOC);
+}
 
 ?>
 

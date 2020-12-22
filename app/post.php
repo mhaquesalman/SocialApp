@@ -35,13 +35,9 @@ $requestData['statusImage'] = "";
         }
     }
  
- $query = $pdo->prepare("INSERT INTO `posts` ( 
-     `post`, 
-     `postUserId`, 
-     `statusImage`, 
-     `statusTime`,  
-     `privacy`) VALUES 
-     ( :post, :postUserId, :statusImage, current_timestamp, :privacy ); ");
+ $query = $pdo->prepare("INSERT INTO `posts` 
+    ( `post`, `postUserId`, `statusImage`, `statusTime`, `privacy`) VALUES 
+    ( :post, :postUserId, :statusImage, current_timestamp, :privacy ); ");
 
 $query->execute($requestData);
 $errorData = $query->errorInfo();
