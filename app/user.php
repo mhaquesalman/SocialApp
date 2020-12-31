@@ -58,7 +58,7 @@ $app->post('/login', function ( $request,  $response, $args) {
      return $response->withHeader('Content-Type','application/json')->withStatus(200);
 });
 
-
+// Api for loading profile info
 $app->get('/loadprofileinfo', function($request, $response, $args) {
 
     require_once __DIR__ . '/../bootstrap/dbconnection.php';
@@ -123,6 +123,7 @@ $app->get('/loadprofileinfo', function($request, $response, $args) {
     
 });
 
+// Api for uploading image & modify name
 $app->post('/uploadImage',function($request,  $response,  $args) {
 	include __DIR__ .'/../bootstrap/dbconnection.php';
 
@@ -200,7 +201,7 @@ $app->post('/uploadImage',function($request,  $response,  $args) {
 	
 });
 
-// Api for search
+// Api for search users
 $app->get('/search',function($request,  $response,  $args){
     include __DIR__ .'/../bootstrap/dbconnection.php';
     
@@ -263,6 +264,118 @@ $app->get('/getnewsfeed',function($request,  $response,  $args){
 	return $response->withHeader('Content-Type', 'application/json')->withStatus(200);	
 	  
 		  
+});
+
+//Api for showing user's profile posts
+$app->get('/loadprofileposts',function($request,  $response,  $args){
+
+	include __DIR__ . '/../bootstrap/dbconnection.php';
+	
+   $output = array();
+   $uid = $request->getQueryParams()['uid'];
+   $limit = $request->getQueryParams()['limit'];
+   $offset = $request->getQueryParams()['offset'];
+ 
+   $current_state = $request->getQueryParams()['current_state'];
+  
+   $query =  $pdo->prepare("SELECT * from `users` WHERE `uid` = :uid LIMIT 1");
+   $query->bindParam(':uid', $uid, PDO::PARAM_STR);
+   $query->execute();	
+
+   $errorData = $query->errorInfo();
+	if($errorData[1]){
+		return checkError($response, $errorData);
+	}
+
+   $userInfo = $query->fetch(PDO::FETCH_OBJ);
+//    print_r($userInfo);
+//    return $response;
+
+		/*
+		privacy flags representation
+
+			0 - > Friends privacy level
+			1 - > Only Me privacy level
+			2 - > Public privacy level
+		*/
+
+		/*
+		Relations between two accounts 
+
+			1 = two people are friends 
+			4 = people are unkown
+			5 = own profile
+		*/
+
+  if($current_state==5){
+
+	  /*
+		-> our own profile,
+		-> can view only me, friends and public  privacy level post
+	  */
+
+	  $query = " SELECT * FROM `posts` WHERE `postUserId` = :uid ORDER By statusTime DESC"; 
+	
+  } else if($current_state==4){
+
+	 /*
+		-> unknown profile 
+		-> can view public privacy level post
+	  */
+
+	  $query = " SELECT * FROM `posts` WHERE `postUserId` = :uid AND `privacy` = 2 ORDER By statusTime DESC"; 
+	 
+  } else if($current_state==1){
+
+	  /*
+		-> friends account
+		-> can view fiends and public privacy level post
+      */
+      
+      $query = " SELECT * FROM `posts` WHERE `postUserId` = :uid AND ( `privacy` = 2 OR `privacy` = 0 ) ORDER By statusTime DESC";
+
+  } else {
+	  
+	  /*
+		  -> relation not known
+		  -> can view public privacy level post
+
+      */
+      
+      $query = " SELECT * FROM `posts` WHERE `postUserId` = :uid AND `privacy` = 2 ORDER By statusTime DESC"; 
+
+  }
+
+  $query .=  '  LIMIT '.$limit. ' OFFSET '.$offset;
+  $query = $pdo->prepare($query);
+  $query->bindParam(':uid', $uid, PDO::PARAM_STR);		 
+  $query->execute();
+
+  $errorData = $query->errorInfo();
+  if($errorData[1]){
+	  return checkError($response, $errorData);
+  }
+
+  $posts= $query->fetchAll(PDO::FETCH_OBJ);
+//   print_r($posts);
+//   return $response;
+  
+  foreach ($posts as $key => $value) {
+	$value->name         =  $userInfo->name;
+	$value->profileUrl   =  $userInfo->profileUrl;
+	$value->email        =  $userInfo->email;
+	$value->coverUrl     =  $userInfo->coverUrl;
+  }
+
+	$output['status']  = 200;
+	$output['message'] = "Profile post Loaded Successfully";
+	$output['posts'] = $posts;
+
+
+  $payload = json_encode($output);
+  $response->getBody()->write($payload);
+  return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
 });
 
 function checkRequest($userId,$profileId){
