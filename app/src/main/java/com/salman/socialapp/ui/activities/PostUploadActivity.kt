@@ -76,7 +76,7 @@ class PostUploadActivity : AppCompatActivity() {
     private fun addPost() {
         val status = input_txt.text.toString()
         val userId = FirebaseAuth.getInstance().uid.toString()
-        if (!status.isEmpty()) {
+        if (!status.isEmpty() || isImageSelected) {
             progressDialog.show()
             val builder = MultipartBody.Builder().apply {
                 setType(MultipartBody.FORM)
@@ -100,8 +100,9 @@ class PostUploadActivity : AppCompatActivity() {
                 progressDialog.hide()
                 showToast(postUploadResponse.message)
                 if (postUploadResponse.status == 200) {
-                    startActivity(Intent(this, MainActivity::class.java))
-                    finish()
+//                    startActivity(Intent(this, MainActivity::class.java))
+//                    finish()
+                    onBackPressed()
                 }
             })
         } else {

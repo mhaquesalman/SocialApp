@@ -25,6 +25,12 @@ interface ApiService {
     @GET("loadfriends")
     fun loadfriends(@Query("uid") uid: String): Call<FriendResponse>
 
+    @GET("getnewsfeed")
+    fun getNewsFeed(@QueryMap params: Map<String, String>): Call<PostResponse>
+
+    @GET("loadprofileposts")
+    fun loadProfilePosts(@QueryMap params: Map<String, String>): Call<PostResponse>
+
     @POST("performaction")
     fun performAction(@Body performAction: PerformAction): Call<GeneralResponse>
 }

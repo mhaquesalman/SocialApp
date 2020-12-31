@@ -7,6 +7,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.util.Pair
 import android.view.View
 import android.widget.EditText
@@ -16,13 +17,20 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.esafirm.imagepicker.features.ImagePicker
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
+import com.salman.socialapp.adapters.PostAdapter
 import com.salman.socialapp.model.PerformAction
+import com.salman.socialapp.model.Post
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.util.hide
+import com.salman.socialapp.util.show
+import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.ProfileViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import id.zelory.compressor.Compressor
@@ -34,6 +42,7 @@ import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.IOException
 
+private const val TAG = "ProfileActivity"
 class ProfileActivity : AppCompatActivity() {
 
 /*
@@ -54,19 +63,18 @@ class ProfileActivity : AppCompatActivity() {
     private var isNameChanged = false
     private var enteredName: String? = null
     var compressedImageFile: File? = null
+    var limit = 5
+    var offset = 0
+    var isFirstLoading = true
+    var isDataAvailable = true
+    private val postItems: MutableList<Post> = ArrayList()
     lateinit var profileViewModel: ProfileViewModel
+    var postAdapter: PostAdapter? = null
     lateinit var progressDialog: ProgressDialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
-
-        progressDialog = ProgressDialog(this)
-        progressDialog.setCancelable(false)
-        progressDialog.setTitle("Loading")
-        progressDialog.setMessage("Please wait...")
-
-        profileViewModel = ViewModelProvider(this, ViewModelFactory()).get(ProfileViewModel::class.java)
 
         setSupportActionBar(toolbar)
         toolbar.setNavigationIcon(R.drawable.ic_back)
@@ -84,9 +92,51 @@ class ProfileActivity : AppCompatActivity() {
             action_btn.isEnabled = false
         }
 
+        swipe.setOnRefreshListener {
+            offset = 0
+            isFirstLoading = true
+            loadProfilePosts()
+        }
+
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener(){
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                if (isLastItemReached() && isDataAvailable) {
+                    offset += limit
+                    loadProfilePosts()
+                }
+            }
+        })
+
+        initialization()
         fetchProfileInfo()
         clickToSeeImage()
 
+    }
+
+    override fun onStop() {
+        super.onStop()
+        offset = 0
+        postItems.clear()
+        isFirstLoading = true
+    }
+
+    private fun initialization() {
+        progressDialog = ProgressDialog(this)
+        progressDialog.setCancelable(false)
+        progressDialog.setTitle("Loading")
+        progressDialog.setMessage("Please wait...")
+
+        profileViewModel = ViewModelProvider(this, ViewModelFactory()).get(ProfileViewModel::class.java)
+
+        recyclerView.layoutManager = LinearLayoutManager(this)
+    }
+
+    private fun isLastItemReached(): Boolean {
+        val layoutManager: LinearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
+        val position = layoutManager.findLastCompletelyVisibleItemPosition()
+        val numberOfItems = postAdapter!!.itemCount
+        Log.d(TAG, "position: " + position + "numberOfItems: " + numberOfItems)
+        return (position >= numberOfItems - 1)
     }
 
     private fun clickToSeeImage() {
@@ -145,6 +195,8 @@ class ProfileActivity : AppCompatActivity() {
                         profileUrl = BASE_URL + profileUrl
                     }
                     Glide.with(this).load(profileUrl).into(profile_image)
+                } else {
+                    profileUrl = "" + R.drawable.default_profile_placeholder
                 }
                 if (!coverUrl!!.isEmpty()) {
                     val coverUri = Uri.parse(coverUrl)
@@ -154,6 +206,8 @@ class ProfileActivity : AppCompatActivity() {
                         coverUrl = BASE_URL + coverUrl
                     }
                     Glide.with(this).load(coverUrl).into(profile_cover)
+                } else {
+                    coverUrl = "" + R.drawable.cover_picture_placeholder
                 }
                 when(currentState) {
                     0 -> {
@@ -168,10 +222,56 @@ class ProfileActivity : AppCompatActivity() {
                 }
                 action_btn.isEnabled = true
                 loadProfileOptionButton()
+                loadProfilePosts()
             } else {
                 Toast.makeText(this, profileResponse.message, Toast.LENGTH_LONG).show()
             }
         })
+    }
+
+    private fun loadProfilePosts() {
+        progressbar.show()
+        val params = HashMap<String, String>()
+        params.put("uid", userId!!)
+        params.put("limit", limit.toString())
+        params.put("offset", offset.toString())
+        params.put("current_state", currentState.toString())
+
+        profileViewModel.loadProfilePosts(params)?.observe(this, Observer { postResponse ->
+            progressbar.hide()
+            if (postResponse.status == 200) {
+
+                if (swipe.isRefreshing) {
+//                    postAdapter.posts.clear()
+                    postItems.clear()
+                    postAdapter?.notifyDataSetChanged()
+                    swipe.isRefreshing = false
+                }
+                postItems.addAll(postResponse.posts)
+//                postAdapter?.updateList(postResponse.posts)
+
+                if (isFirstLoading) {
+                    postAdapter = PostAdapter(this, postItems)
+                    recyclerView.adapter = postAdapter
+                } else {
+                    postAdapter?.itemRangeInserted(postItems.size, postResponse.posts.size)
+                }
+                if (postResponse.posts.size == 0) {
+                    offset -= limit
+                    isDataAvailable = false
+                } else {
+                    isDataAvailable = true
+                }
+                isFirstLoading = false
+
+            } else {
+                if (swipe.isRefreshing) {
+                    swipe.isRefreshing = false
+                }
+                showToast(postResponse.message)
+            }
+        })
+
     }
 
     private fun loadProfileOptionButton() {
@@ -313,6 +413,8 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun selectImage() {
         ImagePicker.create(this).single().start()
+//        to display image in folder view
+//        ImagePicker.create(this).single().folderMode(true).start()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

@@ -35,16 +35,16 @@ class FriendsFragment : Fragment() {
     lateinit var friendRequestAdapter: FriendRequestAdapter
     var userIdFromSharedPref: String? = null
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        mContext = context
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_friends, container, false)
-    }
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        mContext = context
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -72,7 +72,7 @@ class FriendsFragment : Fragment() {
     private fun loadFriends() {
 //        progressbar.show()
         (activity as MainActivity).showProgressBar()
-        mainViewModel.loadFriends(FirebaseAuth.getInstance().uid!!)?.observe(this, Observer { friendResponse ->
+        mainViewModel.loadFriends(FirebaseAuth.getInstance().uid!!)?.observe(viewLifecycleOwner, Observer { friendResponse ->
 //            progressbar.hide()
             (activity as MainActivity).hideProgressBar()
             if (friendResponse.status == 200) {

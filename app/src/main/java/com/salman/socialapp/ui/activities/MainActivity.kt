@@ -3,6 +3,7 @@ package com.salman.socialapp.ui.activities
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -19,6 +20,7 @@ import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import kotlinx.android.synthetic.main.activity_main.*
 
+private const val TAG = "MainActivity"
 const val USER_ID = "uid"
 class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAction {
 
@@ -39,6 +41,12 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
 
         toolbar_search.setOnClickListener {
             startActivity(Intent(this, SearchActivity::class.java))
+        }
+
+        // get user from sharedRef
+        Utils(this).apply {
+            val userFromSharedPref = getUserFromSharedPref()
+            Log.d(TAG, "UserInfo: $userFromSharedPref")
         }
     }
 
@@ -72,6 +80,7 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
 
     fun showProgressBar() {
         progressbar.visibility = View.VISIBLE
+
     }
 
     fun hideProgressBar() {

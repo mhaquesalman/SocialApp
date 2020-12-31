@@ -17,9 +17,15 @@ class ViewImageActivity : AppCompatActivity() {
             var image = intent.getStringExtra("imageUrl")
             val imageUri = Uri.parse(image)
             if (imageUri.authority == null) {
-                image = BASE_URL + image
+                if (image!!.contains("../")) {
+                    image = BASE_URL + image
+                    Glide.with(this).load(image).into(photoView)
+                } else {
+                    Glide.with(this).load(Integer.parseInt(image)).into(photoView)
+                }
+            } else {
+                Glide.with(this).load(image).into(photoView)
             }
-            Glide.with(this).load(image).into(photoView)
         }
     }
 }

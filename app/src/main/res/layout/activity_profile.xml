@@ -18,12 +18,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:id="@+id/collapsing_toolbar"
-        app:expandedTitleMarginStart="16dp"
         app:collapsedTitleTextAppearance="@style/collapsedAppBar"
         app:expandedTitleTextAppearance="@style/expandedAppBar"
         app:layout_scrollFlags="scroll|exitUntilCollapsed"
+        app:expandedTitleMarginStart="10dp"
         app:expandedTitleMarginEnd="0dp"
         app:expandedTitleMarginBottom="20dp"
+        app:maxLines="1"
         app:contentScrim="@color/colorPrimary">
 
         <FrameLayout
@@ -81,12 +82,17 @@
             android:id="@+id/toolbar"
             app:layout_collapseMode="pin"
             app:titleMarginStart="0dp"
-            app:title="Usernamjkljjkjlkjjkhe"
-            style="@style/ThemeOverlay.AppCompat.Dark.ActionBar"/>
+            app:title="Usernamjkljj  kjlkjjkllhe"/>
 
     </com.google.android.material.appbar.CollapsingToolbarLayout>
 
     </com.google.android.material.appbar.AppBarLayout>
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/swipe"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
     <androidx.recyclerview.widget.RecyclerView
         android:layout_width="match_parent"
@@ -95,12 +101,15 @@
         android:layout_marginBottom="8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
 
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
     <ProgressBar
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:id="@+id/progressbar"
         android:layout_marginBottom="8dp"
         android:visibility="gone"
+        tools:visibility="visible"
         android:layout_gravity="bottom|center"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

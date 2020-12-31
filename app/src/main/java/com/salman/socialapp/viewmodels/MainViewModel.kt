@@ -22,4 +22,6 @@ class MainViewModel(val repository: Repository?) : ViewModel() {
 
     fun performFriendAction(performAction: PerformAction) =
         repository?.performFriendAction(performAction)
+
+    fun getNewsFeed(params: Map<String, String>)= repository?.getNewsFeed(params)
 }

@@ -10,6 +10,9 @@ class ProfileViewModel(val repository: Repository?): ViewModel() {
     fun fetchProfileInfo(params: Map<String, String>) =
         repository?.fetchProfileInfo(params)
 
+    fun loadProfilePosts(params: Map<String, String>) =
+        repository?.loadProfilePosts(params)
+
     fun uploadPost(body: MultipartBody, isCoverOrProfileImg: Boolean) =
         repository?.uploadPost(body, isCoverOrProfileImg)
 

@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import com.salman.socialapp.model.*
 import com.salman.socialapp.network.ApiError
 import com.salman.socialapp.network.ApiService
@@ -13,7 +12,6 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
-import java.lang.reflect.Type
 
 
 const val TAG = "Repository"
@@ -175,12 +173,12 @@ class Repository(val apiService: ApiService?) {
     }
 
     fun loadfriends(uid: String): MutableLiveData<FriendResponse> {
-        val friendRequestLiveData: MutableLiveData<FriendResponse> = MutableLiveData()
+        val friendsLiveData: MutableLiveData<FriendResponse> = MutableLiveData()
         val call = apiService?.loadfriends(uid)
         call?.enqueue(object : Callback<FriendResponse> {
             override fun onResponse(call: Call<FriendResponse>, response: Response<FriendResponse>) {
                 if (response.isSuccessful) {
-                    friendRequestLiveData.postValue(response.body())
+                    friendsLiveData.postValue(response.body())
                 } else {
                     val gson = Gson()
                     val friendResponse = try {
@@ -191,16 +189,76 @@ class Repository(val apiService: ApiService?) {
                         FriendResponse(message = errorMessage.message, status = errorMessage.status)
                     }
 
-                    friendRequestLiveData.postValue(friendResponse)
+                    friendsLiveData.postValue(friendResponse)
 
                 }
             }
             override fun onFailure(call: Call<FriendResponse>, t: Throwable) {
                 val errorMessage = ApiError.getErrorFromThrowable(t)
                 val friendResponse = FriendResponse(message = errorMessage.message, status = errorMessage.status)
-                friendRequestLiveData.postValue(friendResponse)
+                friendsLiveData.postValue(friendResponse)
             }
         })
-        return friendRequestLiveData
+        return friendsLiveData
+    }
+
+    fun getNewsFeed(params: Map<String, String>): LiveData<PostResponse> {
+        val newsFeedLiveData: MutableLiveData<PostResponse> = MutableLiveData()
+        val call = apiService?.getNewsFeed(params)
+        call?.enqueue(object : Callback<PostResponse> {
+            override fun onResponse(call: Call<PostResponse>, response: Response<PostResponse>) {
+                if (response.isSuccessful) {
+                    newsFeedLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val postResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), PostResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        PostResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    newsFeedLiveData.postValue(postResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<PostResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val postResponse = PostResponse(message = errorMessage.message, status = errorMessage.status)
+                newsFeedLiveData.postValue(postResponse)
+            }
+        })
+        return newsFeedLiveData
+    }
+
+    fun loadProfilePosts(params: Map<String, String>): LiveData<PostResponse> {
+        val profilePostLiveData: MutableLiveData<PostResponse> = MutableLiveData()
+        val call = apiService?.loadProfilePosts(params)
+        call?.enqueue(object : Callback<PostResponse> {
+            override fun onResponse(call: Call<PostResponse>, response: Response<PostResponse>) {
+                if (response.isSuccessful) {
+                    profilePostLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val postResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), PostResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        PostResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    profilePostLiveData.postValue(postResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<PostResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val postResponse = PostResponse(message = errorMessage.message, status = errorMessage.status)
+                profilePostLiveData.postValue(postResponse)
+            }
+        })
+        return profilePostLiveData
     }
 }
