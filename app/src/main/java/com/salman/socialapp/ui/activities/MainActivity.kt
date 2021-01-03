@@ -11,6 +11,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.FriendRequestAdapter
+import com.salman.socialapp.adapters.PostAdapter
 import com.salman.socialapp.model.PerformAction
 import com.salman.socialapp.ui.fragments.FriendsFragment
 import com.salman.socialapp.ui.fragments.NewsFeedFragment
@@ -22,15 +23,19 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 private const val TAG = "MainActivity"
 const val USER_ID = "uid"
-class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAction {
+class MainActivity : AppCompatActivity(),
+    FriendRequestAdapter.OnClickPerformAction, PostAdapter.IUpdateUserReaction {
 
-     lateinit var mainViewModel: MainViewModel
+    lateinit var mainViewModel: MainViewModel
+    val newsFeedFragment = NewsFeedFragment.getInstance()
+    val friendsFragment = FriendsFragment.getInstance()
+    var currentUserId: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setFragment(NewsFeedFragment.getInstance())
+        setFragment(newsFeedFragment)
         setBottomNavigationView()
 
         mainViewModel = ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java)
@@ -44,9 +49,16 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
         }
 
         // get user from sharedRef
+        getUserFromSharedPref()
+
+    }
+
+    private fun getUserFromSharedPref() {
         Utils(this).apply {
-            val userFromSharedPref = getUserFromSharedPref()
-            Log.d(TAG, "UserInfo: $userFromSharedPref")
+            val userInfo = getUserFromSharedPref()
+            Log.d(TAG, "UserInfo: $userInfo")
+            if (userInfo != null)
+                currentUserId = userInfo.uid
         }
     }
 
@@ -54,16 +66,16 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
         bottomNavigation.setOnNavigationItemSelectedListener { item ->
             when(item.itemId) {
                 R.id.newsFeedFragment -> {
-                    setFragment(NewsFeedFragment.getInstance())
+                    setFragment(newsFeedFragment)
                     return@setOnNavigationItemSelectedListener true
                 }
                 R.id.friendsFragment -> {
-                    setFragment(FriendsFragment.getInstance())
+                    setFragment(friendsFragment)
                     return@setOnNavigationItemSelectedListener true
                 }
                 R.id.profileActivity -> {
                     startActivity(Intent(this, ProfileActivity::class.java)
-                        .putExtra(USER_ID, FirebaseAuth.getInstance().uid))
+                        .putExtra(USER_ID, currentUserId))
                     return@setOnNavigationItemSelectedListener false
                 }
             }
@@ -102,6 +114,17 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
                 }
             }
         })
+    }
+
+    override fun updateUserReaction(
+        uId: String,
+        postId: Int,
+        postOwnerId: String,
+        previousReactionType: String,
+        newReactionType: String,
+        position: Int
+    ) {
+        newsFeedFragment.updateUserReaction(uId, postId, postOwnerId, previousReactionType, newReactionType, position)
     }
 
 }

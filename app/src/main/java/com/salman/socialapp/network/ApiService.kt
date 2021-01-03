@@ -33,4 +33,7 @@ interface ApiService {
 
     @POST("performaction")
     fun performAction(@Body performAction: PerformAction): Call<GeneralResponse>
+
+    @POST("performreaction")
+    fun performReaction(@Body performReaction: PerformReaction): Call<ReactionResponse>
 }

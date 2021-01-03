@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.salman.socialapp.model.FriendResponse
 import com.salman.socialapp.model.PerformAction
+import com.salman.socialapp.model.PerformReaction
 import com.salman.socialapp.repositories.Repository
 
 class MainViewModel(val repository: Repository?) : ViewModel() {
@@ -24,4 +25,7 @@ class MainViewModel(val repository: Repository?) : ViewModel() {
         repository?.performFriendAction(performAction)
 
     fun getNewsFeed(params: Map<String, String>)= repository?.getNewsFeed(params)
+
+    fun performReaction(performReaction: PerformReaction) =
+        repository?.performReaction(performReaction)
 }

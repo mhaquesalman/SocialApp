@@ -26,8 +26,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.PostAdapter
 import com.salman.socialapp.model.PerformAction
+import com.salman.socialapp.model.PerformReaction
 import com.salman.socialapp.model.Post
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.util.Utils
 import com.salman.socialapp.util.hide
 import com.salman.socialapp.util.show
 import com.salman.socialapp.util.showToast
@@ -43,7 +45,7 @@ import java.io.File
 import java.io.IOException
 
 private const val TAG = "ProfileActivity"
-class ProfileActivity : AppCompatActivity() {
+class ProfileActivity : AppCompatActivity(), PostAdapter.IUpdateUserReaction {
 
 /*
 * 0 = profile is still loading
@@ -63,6 +65,7 @@ class ProfileActivity : AppCompatActivity() {
     private var isNameChanged = false
     private var enteredName: String? = null
     var compressedImageFile: File? = null
+    private var currentUserId: String? = ""
     var limit = 5
     var offset = 0
     var isFirstLoading = true
@@ -108,7 +111,11 @@ class ProfileActivity : AppCompatActivity() {
         })
 
         initialization()
+        // get user from sharedRef
+        getUserFromSharedPref()
+        // fetching user's profile data
         fetchProfileInfo()
+        // view profile & cover picture
         clickToSeeImage()
 
     }
@@ -129,6 +136,15 @@ class ProfileActivity : AppCompatActivity() {
         profileViewModel = ViewModelProvider(this, ViewModelFactory()).get(ProfileViewModel::class.java)
 
         recyclerView.layoutManager = LinearLayoutManager(this)
+    }
+
+    private fun getUserFromSharedPref() {
+        Utils(this).apply {
+            val userInfo = getUserFromSharedPref()
+            Log.d(TAG, "UserInfo: $userInfo")
+            if (userInfo != null)
+                currentUserId = userInfo.uid
+        }
     }
 
     private fun isLastItemReached(): Boolean {
@@ -501,6 +517,24 @@ class ProfileActivity : AppCompatActivity() {
                 .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->  })
                 .create()
         dialog.show()
+    }
+
+    override fun updateUserReaction(
+        uId: String,
+        postId: Int,
+        postOwnerId: String,
+        previousReactionType: String,
+        newReactionType: String,
+        position: Int
+    ) {
+        val performReaction = PerformReaction(uId, postId.toString(), postOwnerId, previousReactionType, newReactionType)
+        profileViewModel.performReaction(performReaction)?.observe(this, Observer { reactionResponse ->
+            if (reactionResponse.status == 200) {
+                postAdapter?.updatePostAfterReaction(position, reactionResponse.reaction!!)
+            } else {
+                showToast(reactionResponse.message)
+            }
+        })
     }
 
 }

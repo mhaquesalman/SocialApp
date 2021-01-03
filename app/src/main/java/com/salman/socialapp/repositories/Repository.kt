@@ -19,14 +19,12 @@ class Repository(val apiService: ApiService?) {
 
     companion object {
         private var repository: Repository? = null
-
         fun getRepository(apiService: ApiService?): Repository? {
             if (repository == null) {
                 repository = Repository(apiService)
             }
             return repository
         }
-
     }
 
     fun login(userInfo: UserInfo): LiveData<AuthResponse> {
@@ -62,19 +60,19 @@ class Repository(val apiService: ApiService?) {
         val call = apiService?.fetchProfileInfo(params)
         call?.enqueue(object : Callback<ProfileResponse> {
             override fun onResponse(call: Call<ProfileResponse>, response: Response<ProfileResponse>) {
-               if (response.isSuccessful) {
-                   profileInfoLiveData.postValue(response.body())
-               } else {
-                   val gson = Gson()
-                   val profileResponse = try {
-                       gson.fromJson(response.errorBody()?.toString(), ProfileResponse::class.java)
-                   } catch (e: IOException) {
-                       val errorMessage = ApiError.getErrorFromException(e)
-                       ProfileResponse(message = errorMessage.message, status = errorMessage.status)
-                   }
-                   profileInfoLiveData.postValue(profileResponse)
+                if (response.isSuccessful) {
+                    profileInfoLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val profileResponse = try {
+                        gson.fromJson(response.errorBody()?.toString(), ProfileResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        ProfileResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+                    profileInfoLiveData.postValue(profileResponse)
 
-               }
+                }
             }
             override fun onFailure(call: Call<ProfileResponse>, t: Throwable) {
                 val errorMessage = ApiError.getErrorFromThrowable(t)
@@ -260,5 +258,35 @@ class Repository(val apiService: ApiService?) {
             }
         })
         return profilePostLiveData
+    }
+
+    fun performReaction(performReaction: PerformReaction): LiveData<ReactionResponse> {
+        val reactionLiveData: MutableLiveData<ReactionResponse> = MutableLiveData()
+        val call = apiService?.performReaction(performReaction)
+        call?.enqueue(object : Callback<ReactionResponse> {
+            override fun onResponse(call: Call<ReactionResponse>, response: Response<ReactionResponse>) {
+                if (response.isSuccessful) {
+                    reactionLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val reactResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), ReactionResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        ReactionResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    reactionLiveData.postValue(reactResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<ReactionResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val reactResponse = ReactionResponse(message = errorMessage.message, status = errorMessage.status)
+                reactionLiveData.postValue(reactResponse)
+            }
+        })
+        return reactionLiveData
     }
 }

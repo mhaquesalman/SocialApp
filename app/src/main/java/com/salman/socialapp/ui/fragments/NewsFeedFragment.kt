@@ -1,5 +1,3 @@
-@file:Suppress("MemberVisibilityCanBePrivate")
-
 package com.salman.socialapp.ui.fragments
 
 import android.content.Context
@@ -17,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.PostAdapter
+import com.salman.socialapp.model.PerformReaction
 import com.salman.socialapp.model.Post
 import com.salman.socialapp.ui.activities.MainActivity
 import com.salman.socialapp.util.showToast
@@ -30,7 +29,7 @@ class NewsFeedFragment : Fragment() {
     lateinit var mContext: Context
     lateinit var mainViewModel: MainViewModel
     var postAdapter: PostAdapter? = null
-    var currentUserId: String? = null
+    var currentUserId: String? = ""
     var limit = 5
     var offset = 0
     var isFirstLoading = true
@@ -46,8 +45,11 @@ class NewsFeedFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_news_feed, container, false)
+        val view = inflater.inflate(R.layout.fragment_news_feed, container, false)
+
+        // get user from sharedRef
+        this.currentUserId = (activity as MainActivity).currentUserId
+        return view
     }
 
 
@@ -55,6 +57,7 @@ class NewsFeedFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         initialization()
+        fetchNewsFeed()
     }
 
     private fun initialization() {
@@ -85,14 +88,14 @@ class NewsFeedFragment : Fragment() {
         return (position >= numberOfItems - 1)
     }
 
-    override fun onResume() {
+/*    override fun onResume() {
         super.onResume()
         fetchNewsFeed()
-    }
+    }*/
 
     private fun fetchNewsFeed() {
         (activity as MainActivity).showProgressBar()
-        currentUserId = FirebaseAuth.getInstance().uid
+//        currentUserId = FirebaseAuth.getInstance().uid
         val params = HashMap<String, String>()
         params.put("uid", currentUserId!!)
         params.put("limit", limit.toString())
@@ -112,7 +115,7 @@ class NewsFeedFragment : Fragment() {
 //                postAdapter?.updateList(postResponse.posts)
 
                 if (isFirstLoading) {
-                    postAdapter = PostAdapter(mContext, postItems)
+                    postAdapter = PostAdapter(mContext, postItems, currentUserId!!)
                     newsFeedRV.adapter = postAdapter
                 } else {
                     postAdapter?.itemRangeInserted(postItems.size, postResponse.posts.size)
@@ -138,6 +141,24 @@ class NewsFeedFragment : Fragment() {
         offset = 0
         postItems.clear()
         isFirstLoading = true
+    }
+
+    fun updateUserReaction(
+        uId: String,
+        postId: Int,
+        postOwnerId: String,
+        previousReactionType: String,
+        newReactionType: String,
+        position: Int
+    ) {
+        val performReaction = PerformReaction(uId, postId.toString(), postOwnerId, previousReactionType, newReactionType)
+        mainViewModel.performReaction(performReaction)?.observe(this, Observer { reactionResponse ->
+            if (reactionResponse.status == 200) {
+                postAdapter?.updatePostAfterReaction(position, reactionResponse.reaction!!)
+            } else {
+                mContext.showToast(reactionResponse.message)
+            }
+        })
     }
 
     companion object {
