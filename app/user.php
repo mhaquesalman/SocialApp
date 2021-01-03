@@ -254,12 +254,22 @@ $app->get('/getnewsfeed',function($request,  $response,  $args){
   
     $posts= $query->fetchAll(PDO::FETCH_OBJ);
     
+	// for reaction feature
+	foreach ($posts as $key => $value) {
+		$reactionCheck = checkOurReact($uid,  $value->postId);
+		if($reactionCheck){
+			$value->reactionType=$reactionCheck->reactionType;
+		}else{
+			$value->reactionType="default";
+		}
+	}
+
 	$output['status']  = 200;
 	$output['message'] = "Newsfeed Loaded Successfully";
 	$output['posts'] = $posts;
 
 
-	$payload = json_encode($output);
+	$payload = json_encode($output, JSON_NUMERIC_CHECK);
 	$response->getBody()->write($payload);
 	return $response->withHeader('Content-Type', 'application/json')->withStatus(200);	
 	  
@@ -364,7 +374,15 @@ $app->get('/loadprofileposts',function($request,  $response,  $args){
 	$value->name         =  $userInfo->name;
 	$value->profileUrl   =  $userInfo->profileUrl;
 	$value->email        =  $userInfo->email;
-	$value->coverUrl     =  $userInfo->coverUrl;
+    $value->coverUrl     =  $userInfo->coverUrl;
+    
+    //for reaction feature
+	$reactionCheck = checkOurReact($uid,  $value->postId);
+	if($reactionCheck){
+		$value->reactionType=$reactionCheck->reactionType;
+	}else{
+		$value->reactionType="default";
+	}
   }
 
 	$output['status']  = 200;
@@ -372,7 +390,7 @@ $app->get('/loadprofileposts',function($request,  $response,  $args){
 	$output['posts'] = $posts;
 
 
-  $payload = json_encode($output);
+  $payload = json_encode($output, JSON_NUMERIC_CHECK);
   $response->getBody()->write($payload);
   return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
 
@@ -396,6 +414,16 @@ function checkFriend($userId,$profileId){
 	$stmt->execute();
 	return $stmt->fetch(PDO::FETCH_ASSOC);
 }
+
+function checkOurReact($userId,$postId){
+    include __DIR__ . '/../bootstrap/dbconnection.php';
+     $stmt = $pdo->prepare("SELECT * FROM `reactions` WHERE `reactionBy` = :userId AND `postOn` = :postId");
+     $stmt->bindParam(":userId", $userId, PDO::PARAM_STR);
+     $stmt->bindParam(":postId", $postId, PDO::PARAM_INT);
+     $stmt->execute();
+     return $stmt->fetch(PDO::FETCH_OBJ);
+
+ }
 
 ?>
 
