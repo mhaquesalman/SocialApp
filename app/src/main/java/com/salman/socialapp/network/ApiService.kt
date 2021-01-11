@@ -36,4 +36,14 @@ interface ApiService {
 
     @POST("performreaction")
     fun performReaction(@Body performReaction: PerformReaction): Call<ReactionResponse>
+
+    @POST("postcomment")
+    fun postComment(@Body postComment: PostComment): Call<CommentResponse>
+
+    @GET("getpostcomments")
+    fun getPostComments(@Query("postId") postId: String, @Query("postUserId") postUserId: String): Call<CommentResponse>
+
+    @GET("getcommentreplies")
+    fun getCommentReplies(@Query("postId") postId: String, @Query("commentId") commentId: String): Call<CommentResponse>
+
 }

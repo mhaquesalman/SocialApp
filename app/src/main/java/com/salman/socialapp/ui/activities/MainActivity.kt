@@ -15,6 +15,8 @@ import com.salman.socialapp.adapters.PostAdapter
 import com.salman.socialapp.model.PerformAction
 import com.salman.socialapp.ui.fragments.FriendsFragment
 import com.salman.socialapp.ui.fragments.NewsFeedFragment
+import com.salman.socialapp.util.CommentsBottomDialog
+import com.salman.socialapp.util.IOnCommentAdded
 import com.salman.socialapp.util.Utils
 import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.MainViewModel
@@ -23,8 +25,8 @@ import kotlinx.android.synthetic.main.activity_main.*
 
 private const val TAG = "MainActivity"
 const val USER_ID = "uid"
-class MainActivity : AppCompatActivity(),
-    FriendRequestAdapter.OnClickPerformAction, PostAdapter.IUpdateUserReaction {
+class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAction,
+    PostAdapter.IUpdateUserReaction, IOnCommentAdded {
 
     lateinit var mainViewModel: MainViewModel
     val newsFeedFragment = NewsFeedFragment.getInstance()
@@ -125,6 +127,10 @@ class MainActivity : AppCompatActivity(),
         position: Int
     ) {
         newsFeedFragment.updateUserReaction(uId, postId, postOwnerId, previousReactionType, newReactionType, position)
+    }
+
+    override fun onCommentAdded(position: Int) {
+        newsFeedFragment.onCommentAdded(position)
     }
 
 }

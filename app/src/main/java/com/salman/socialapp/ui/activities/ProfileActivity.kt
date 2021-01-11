@@ -29,10 +29,7 @@ import com.salman.socialapp.model.PerformAction
 import com.salman.socialapp.model.PerformReaction
 import com.salman.socialapp.model.Post
 import com.salman.socialapp.network.BASE_URL
-import com.salman.socialapp.util.Utils
-import com.salman.socialapp.util.hide
-import com.salman.socialapp.util.show
-import com.salman.socialapp.util.showToast
+import com.salman.socialapp.util.*
 import com.salman.socialapp.viewmodels.ProfileViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import id.zelory.compressor.Compressor
@@ -45,7 +42,8 @@ import java.io.File
 import java.io.IOException
 
 private const val TAG = "ProfileActivity"
-class ProfileActivity : AppCompatActivity(), PostAdapter.IUpdateUserReaction {
+class ProfileActivity : AppCompatActivity(),
+    PostAdapter.IUpdateUserReaction, IOnCommentAdded {
 
 /*
 * 0 = profile is still loading
@@ -65,7 +63,7 @@ class ProfileActivity : AppCompatActivity(), PostAdapter.IUpdateUserReaction {
     private var isNameChanged = false
     private var enteredName: String? = null
     var compressedImageFile: File? = null
-    private var currentUserId: String? = ""
+    var currentUserId: String? = ""
     var limit = 5
     var offset = 0
     var isFirstLoading = true
@@ -82,7 +80,7 @@ class ProfileActivity : AppCompatActivity(), PostAdapter.IUpdateUserReaction {
         setSupportActionBar(toolbar)
         toolbar.setNavigationIcon(R.drawable.ic_back)
         toolbar.setNavigationOnClickListener {
-            super.onBackPressed()
+            onBackPressed()
         }
 
         if (intent != null)
@@ -535,6 +533,10 @@ class ProfileActivity : AppCompatActivity(), PostAdapter.IUpdateUserReaction {
                 showToast(reactionResponse.message)
             }
         })
+    }
+
+    override fun onCommentAdded(position: Int) {
+        postAdapter?.updateCommentCount(position)
     }
 
 }

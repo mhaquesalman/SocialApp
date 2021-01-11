@@ -2,12 +2,15 @@ package com.salman.socialapp.adapters
 
 import android.content.Context
 import android.net.Uri
+import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.amrdeveloper.reactbutton.FbReactions
 import com.amrdeveloper.reactbutton.ReactButton
@@ -18,6 +21,8 @@ import com.salman.socialapp.model.Post
 import com.salman.socialapp.model.Reaction
 import com.salman.socialapp.model.User
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.util.AgoDateParser
+import com.salman.socialapp.util.CommentsBottomDialog
 import com.salman.socialapp.util.Utils
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.item_post.view.*
@@ -65,6 +70,10 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
 
         holder.peopleName.text = post.name
         holder.date.text = Utils.formatDate(post.statusTime)
+        
+//        holder.date.setText(AgoDateParser.getTimeAgo(post.statusTime))
+
+        holder.reactionButton.isEnabled = true
 
         if (post.privacy == "0") {
             holder.privacyIcon.setImageResource(R.drawable.ic_friends)
@@ -90,17 +99,22 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
         holder.postTitle.text = post.post
 
         val postUri = Uri.parse(post.statusImage)
-        val postImage = if (postUri.authority == null) {
+        val postImage = if (postUri.authority == null && !post.statusImage!!.isEmpty()) {
              BASE_URL + post.statusImage
         } else {
             post.statusImage
         }
-//        Log.d(TAG, "postImage: $postImage")
+//        Log.d(TAG, "statusImage: $postImage")
+//        Log.d(TAG, "${post.postId}: ${post.statusImage}")
         if (!postImage!!.isEmpty()) {
             holder.postImage.visibility = View.VISIBLE
             Glide.with(context)
                 .load(postImage)
+                .placeholder(R.drawable.progress_animation)
+                .error(R.drawable.try_later)
                 .into(holder.postImage)
+        } else {
+            holder.postImage.visibility = View.GONE
         }
 
         post.apply {
@@ -124,11 +138,44 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
         holder.reactionButton.currentReaction = FbReactions.getReaction(post.reactionType)
         Log.d(TAG, "ReactionCurrent: ${post.reactionType}")
 
+        holder.commentSection.setOnClickListener {
+            val bundle = Bundle().apply {
+                putString("userId", userId)
+                putString("postId", post.postId.toString())
+                putString("postUserId", post.postUserId)
+                putString("commentOn", "post")
+                putString("commentUserId", "-1")
+                putString("parentId", "-1")
+                putInt("commentCount", post.commentCount)
+                putBoolean("openKeyboard", false)
+                putInt("postAdapterPosition", position)
+            }
+            val commentsBottomDialog = CommentsBottomDialog()
+            commentsBottomDialog.arguments = bundle
+            val fragmentActivity = context as FragmentActivity
+            commentsBottomDialog.show(fragmentActivity.supportFragmentManager, "commentFragmentDialog")
+        }
+
+        val totalComment = post.commentCount
+        when (totalComment) {
+            0 -> holder.commentCount.text = "Comment"
+            1 -> holder.commentCount.text = "$totalComment Comment"
+            else -> holder.commentCount.text = "$totalComment Comments"
+        }
+
+
     }
 
     override fun getItemCount(): Int {
         Log.d(TAG, "getItemCount: ${postItems.size}")
         return postItems.size
+    }
+
+    fun updateCommentCount(position: Int) {
+        postItems.get(position).apply {
+            commentCount += 1
+            notifyItemChanged(position, this)
+        }
     }
 
     fun updatePostAfterReaction(position: Int, reaction: Reaction) {
@@ -156,18 +203,20 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
         val postImage: ImageView = itemView.post_image
         val reactionButton: ReactButton = itemView.reaction
         val reactionCount: TextView = itemView.total_reactionTV
+        val commentCount: TextView = itemView.comment_countTV
+        val commentSection: LinearLayout = itemView.commentSection
 
         init {
             reactionButton.setReactClickListener(object : View.OnClickListener {
                 override fun onClick(v: View?) {
-                    Log.d(TAG, "setReactClickListener clicked ")
+                    Log.d(TAG, "setReactClickListener called")
                     onReactionChanged(v)
                 }
             })
 
             reactionButton.setReactDismissListener(object : View.OnLongClickListener {
                 override fun onLongClick(v: View?): Boolean {
-                    Log.d(TAG, "setReactDismissListener clicked ")
+                    Log.d(TAG, "setReactDismissListener called")
                     onReactionChanged(v)
                     return false
                 }
@@ -175,8 +224,10 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
         }
 
         private fun onReactionChanged(v: View?) {
+            Log.d(TAG, "onReactionChanged called")
             val previousReactionType = postItems.get(adapterPosition).reactionType
             val newReactionType = (v as ReactButton).currentReaction.reactType
+            v.isEnabled = false
 
             Log.d(TAG, "Reaction: $previousReactionType / $newReactionType")
             if (!previousReactionType!!.contentEquals(newReactionType)) {

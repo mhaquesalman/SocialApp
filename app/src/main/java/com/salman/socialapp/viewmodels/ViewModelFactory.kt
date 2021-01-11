@@ -34,6 +34,9 @@ class ViewModelFactory : ViewModelProvider.NewInstanceFactory() {
             modelClass.isAssignableFrom(MainViewModel::class.java) -> {
                 MainViewModel(repository) as T
             }
+            modelClass.isAssignableFrom(CommentViewModel::class.java) -> {
+                CommentViewModel(repository) as T
+            }
             else -> throw IllegalArgumentException("ViewModel not found !")
         }
     }

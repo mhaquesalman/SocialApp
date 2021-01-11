@@ -289,4 +289,94 @@ class Repository(val apiService: ApiService?) {
         })
         return reactionLiveData
     }
+
+    fun postComment(postComment: PostComment): LiveData<CommentResponse> {
+        val postCommentLiveData: MutableLiveData<CommentResponse> = MutableLiveData()
+        val call = apiService?.postComment(postComment)
+        call?.enqueue(object : Callback<CommentResponse> {
+            override fun onResponse(call: Call<CommentResponse>, response: Response<CommentResponse>) {
+                if (response.isSuccessful) {
+                    postCommentLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val commentResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), CommentResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        CommentResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    postCommentLiveData.postValue(commentResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<CommentResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val commentResponse = CommentResponse(message = errorMessage.message, status = errorMessage.status)
+                postCommentLiveData.postValue(commentResponse)
+            }
+        })
+        return postCommentLiveData
+    }
+
+    fun getPostComments(postId: String, postUserId: String): LiveData<CommentResponse> {
+        val getPostCommentsLiveData: MutableLiveData<CommentResponse> = MutableLiveData()
+        val call = apiService?.getPostComments(postId, postUserId)
+        call?.enqueue(object : Callback<CommentResponse> {
+            override fun onResponse(call: Call<CommentResponse>, response: Response<CommentResponse>) {
+                if (response.isSuccessful) {
+                    getPostCommentsLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val commentResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), CommentResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        CommentResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    getPostCommentsLiveData.postValue(commentResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<CommentResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val commentResponse = CommentResponse(message = errorMessage.message, status = errorMessage.status)
+                getPostCommentsLiveData.postValue(commentResponse)
+            }
+        })
+        return getPostCommentsLiveData
+    }
+
+    fun getCommentReplies(postId: String, commentId: String): LiveData<CommentResponse> {
+        val getCommentRepliesLiveData: MutableLiveData<CommentResponse> = MutableLiveData()
+        val call = apiService?.getCommentReplies(postId, commentId)
+        call?.enqueue(object : Callback<CommentResponse> {
+            override fun onResponse(call: Call<CommentResponse>, response: Response<CommentResponse>) {
+                if (response.isSuccessful) {
+                    getCommentRepliesLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val commentResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), CommentResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        CommentResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    getCommentRepliesLiveData.postValue(commentResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<CommentResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val commentResponse = CommentResponse(message = errorMessage.message, status = errorMessage.status)
+                getCommentRepliesLiveData.postValue(commentResponse)
+            }
+        })
+        return getCommentRepliesLiveData
+    }
 }

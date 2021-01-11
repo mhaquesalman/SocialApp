@@ -41,12 +41,13 @@ class PostUploadActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_post_upload)
 
-        progressDialog = ProgressDialog(this)
-        progressDialog.setCancelable(false)
-        progressDialog.setTitle("Loading...")
-        progressDialog.setMessage("Uploading post...please wait")
+        initialization()
 
-        postUploadViewModel = ViewModelProvider(this, ViewModelFactory()).get(PostUploadViewModel::class.java)
+        setSupportActionBar(toolbar)
+        toolbar.setNavigationIcon(R.drawable.ic_back)
+        toolbar.setNavigationOnClickListener {
+            onBackPressed()
+        }
 
         spinner_privacy.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, pos: Int, id: Long) {
@@ -71,6 +72,15 @@ class PostUploadActivity : AppCompatActivity() {
         imagePreview.setOnClickListener {
             selectImage()
         }
+    }
+
+    private fun initialization() {
+        progressDialog = ProgressDialog(this)
+        progressDialog.setCancelable(false)
+        progressDialog.setTitle("Loading...")
+        progressDialog.setMessage("Uploading post...please wait")
+
+        postUploadViewModel = ViewModelProvider(this, ViewModelFactory()).get(PostUploadViewModel::class.java)
     }
 
     private fun addPost() {

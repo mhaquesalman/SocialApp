@@ -20,5 +20,6 @@ data class Post(
     var angryCount: Int = 0,
     var likeCount: Int = 0,
     var hahaCount: Int = 0,
+    var commentCount: Int = 0,
     var reactionType: String? = null
 )

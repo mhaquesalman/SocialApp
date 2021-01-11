@@ -49,6 +49,7 @@ class NewsFeedFragment : Fragment() {
 
         // get user from sharedRef
         this.currentUserId = (activity as MainActivity).currentUserId
+        Log.d(TAG, "currentUserId: $currentUserId")
         return view
     }
 
@@ -58,6 +59,11 @@ class NewsFeedFragment : Fragment() {
 
         initialization()
         fetchNewsFeed()
+    }
+
+    override fun onResume() {
+        super.onResume()
+//        fetchNewsFeed()
     }
 
     private fun initialization() {
@@ -104,7 +110,6 @@ class NewsFeedFragment : Fragment() {
         mainViewModel.getNewsFeed(params)?.observe(viewLifecycleOwner, Observer { postResponse ->
             (activity as MainActivity).hideProgressBar()
             if (postResponse.status == 200) {
-
                 if (swipe.isRefreshing) {
 //                    postAdapter.posts.clear()
                     postItems.clear()
@@ -159,6 +164,10 @@ class NewsFeedFragment : Fragment() {
                 mContext.showToast(reactionResponse.message)
             }
         })
+    }
+
+    fun onCommentAdded(position: Int) {
+        postAdapter?.updateCommentCount(position)
     }
 
     companion object {
