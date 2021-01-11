@@ -14,6 +14,8 @@ $app->post('/login', function ( $request,  $response, $args) {
     $requestData['coverUrl'] = $request->getParsedBody()['coverUrl'];
     $requestData['userToken'] = $request->getParsedBody()['userToken'];
 
+    // print_r($requestData);
+
     $query = $pdo->prepare("SELECT `uid` from `users` WHERE `uid` = :uid LIMIT 1");
     $query->bindparam(':uid', $requestData['uid']);
     $query->execute();
