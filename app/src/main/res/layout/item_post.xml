@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:tools="http://schemas.android.com/tools"
@@ -35,11 +36,14 @@
                 android:id="@+id/people_name"
                 android:layout_alignParentTop="true"
                 android:layout_toEndOf="@id/people_image"
+                android:layout_toStartOf="@id/more_btn"
                 android:text="Name"
                 android:layout_marginTop="5dp"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#000"/>
+                android:textColor="#000"
+                android:maxLines="1"
+                android:ellipsize="end"/>
 
             <TextView
                 android:layout_width="wrap_content"
@@ -57,6 +61,19 @@
                 android:layout_below="@id/people_name"
                 android:src="@drawable/ic_only_me"
                 android:layout_marginStart="5dp"/>
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/more_btn"
+                android:src="@drawable/ic_more"
+                app:tint="@color/colorPrimaryDark"
+                android:visibility="invisible"
+                tools:visibility="visible"
+                android:layout_alignParentEnd="true"
+                android:layout_margin="5dp"
+                android:padding="5dp"
+                android:background="@drawable/circle_bg"/>
 
         </RelativeLayout>
 
@@ -148,6 +165,7 @@
                     android:text="0 Comment"
                     android:textSize="15sp"
                     android:layout_gravity="center"/>
+
             </LinearLayout>
 
         </LinearLayout>

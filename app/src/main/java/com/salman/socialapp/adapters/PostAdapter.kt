@@ -1,39 +1,45 @@
 package com.salman.socialapp.adapters
 
+import android.app.Dialog
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.amrdeveloper.reactbutton.FbReactions
 import com.amrdeveloper.reactbutton.ReactButton
 import com.bumptech.glide.Glide
-import com.google.firebase.auth.FirebaseAuth
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.salman.socialapp.R
 import com.salman.socialapp.model.Post
 import com.salman.socialapp.model.Reaction
-import com.salman.socialapp.model.User
 import com.salman.socialapp.network.BASE_URL
-import com.salman.socialapp.util.AgoDateParser
 import com.salman.socialapp.util.CommentsBottomDialog
 import com.salman.socialapp.util.Utils
 import de.hdodenhof.circleimageview.CircleImageView
+import kotlinx.android.synthetic.main.click_post_bottom_sheet.view.*
 import kotlinx.android.synthetic.main.item_post.view.*
-import kotlinx.android.synthetic.main.item_search.view.*
 
 private const val TAG = "PostAdapter"
-class PostAdapter(val context: Context, val postItems: MutableList<Post>, val userId: String = "") :
-    RecyclerView.Adapter<PostAdapter.PostViewHolder>() {
+class PostAdapter(
+    val context: Context, val postItems: MutableList<Post>,
+    val userId: String = "", val isPostEditable: Boolean = false
+) : RecyclerView.Adapter<PostAdapter.PostViewHolder>() {
 
     var totalReaction = 0
-    val iUpdateUserReaction: IUpdateUserReaction
+    var iUpdateUserReaction: IUpdateUserReaction? = null
+    var iPostMoreAction: IPostMoreAction? = null
 
     init {
         if (context is IUpdateUserReaction) {
@@ -41,6 +47,13 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
         } else {
             throw RuntimeException("$context must be implemented")
         }
+        Log.d(TAG, "iUpdateUserReaction: $iUpdateUserReaction")
+    }
+
+    fun setOnPostMoreAction(iPostMoreAction: IPostMoreAction) {
+        Log.d(TAG, "setOnPostMoreAction: called")
+        this.iPostMoreAction = iPostMoreAction
+        Log.d(TAG, "iPostMoreAction: ${this.iPostMoreAction}")
     }
 
 /*    private var postList: ArrayList<Post> = ArrayList()
@@ -195,6 +208,7 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
     }
 
     inner class PostViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+
         val peopleName: TextView  = itemView.people_name
         val peopleImage: CircleImageView = itemView.people_image
         val date: TextView = itemView.date
@@ -205,6 +219,11 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
         val reactionCount: TextView = itemView.total_reactionTV
         val commentCount: TextView = itemView.comment_countTV
         val commentSection: LinearLayout = itemView.commentSection
+        val moreButton: ImageView = itemView.more_btn
+        // bottomsheet dialog
+//        var bottomSheetDialog: BottomSheetDialog? = null
+        lateinit var postEditBtn: TextView
+        lateinit var postDeleteBtn: TextView
 
         init {
             reactionButton.setReactClickListener(object : View.OnClickListener {
@@ -221,6 +240,71 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
                     return false
                 }
             })
+
+            if (isPostEditable) {
+                moreButton.visibility = View.VISIBLE
+                moreButton.setOnClickListener {
+//                    showPopupMenu(it)
+                    showBottomSheetDialog()
+                }
+            } else {
+                moreButton.visibility = View.INVISIBLE
+            }
+        }
+
+        private fun showPopupMenu(v: View) {
+            val mAdapterPosition = adapterPosition
+            val popupMenu = PopupMenu(v.context, v)
+            popupMenu.inflate(R.menu.popup_menu)
+            popupMenu.setOnMenuItemClickListener(object : PopupMenu.OnMenuItemClickListener {
+                override fun onMenuItemClick(item: MenuItem): Boolean {
+                    when (item.itemId) {
+                        R.id.edit_menu -> {
+                            if (iPostMoreAction != null && mAdapterPosition != RecyclerView.NO_POSITION) {
+                                iPostMoreAction?.updatePost(postItems[mAdapterPosition])
+                                Log.d(TAG, "AdapterPosition: $mAdapterPosition")
+                            }
+                            return true
+                        }
+                        R.id.delete_menu -> {
+                            if (iPostMoreAction != null && mAdapterPosition != RecyclerView.NO_POSITION) {
+                                iPostMoreAction?.deletePost(postItems[mAdapterPosition].postId, mAdapterPosition)
+                                Log.d(TAG, "AdapterPosition: $mAdapterPosition")
+                            }
+                            return true
+                        }
+                        else -> {
+                            return false
+                        }
+                    }
+                }
+            })
+            popupMenu.show()
+        }
+
+        private fun showBottomSheetDialog() {
+            val mAdapterPosition = adapterPosition
+            val bottomSheetDialog = BottomSheetDialog(context, R.style.BottomSheetDialog)
+            val view = LayoutInflater.from(context).inflate(R.layout.click_post_bottom_sheet, null)
+            postEditBtn = view.edit_btn
+            postDeleteBtn = view.delete_btn
+            postEditBtn.setOnClickListener {
+                if (iPostMoreAction != null && mAdapterPosition != RecyclerView.NO_POSITION) {
+                    iPostMoreAction?.updatePost(postItems[mAdapterPosition])
+                    Log.d(TAG, "AdapterPosition: $mAdapterPosition")
+                }
+                bottomSheetDialog.dismiss()
+            }
+            postDeleteBtn.setOnClickListener {
+                if (iPostMoreAction != null && mAdapterPosition != RecyclerView.NO_POSITION) {
+                    iPostMoreAction?.deletePost(postItems[mAdapterPosition].postId, mAdapterPosition)
+                    Log.d(TAG, "AdapterPosition: $mAdapterPosition")
+                }
+                bottomSheetDialog.dismiss()
+            }
+            bottomSheetDialog.setContentView(view)
+//            bottomSheetDialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            bottomSheetDialog.show()
         }
 
         private fun onReactionChanged(v: View?) {
@@ -231,7 +315,7 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
 
             Log.d(TAG, "Reaction: $previousReactionType / $newReactionType")
             if (!previousReactionType!!.contentEquals(newReactionType)) {
-                iUpdateUserReaction.updateUserReaction(
+                iUpdateUserReaction?.updateUserReaction(
                     userId,
                     postItems.get(adapterPosition).postId,
                     postItems.get(adapterPosition).postUserId!!,
@@ -241,7 +325,6 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
                 )
             }
         }
-
     }
 
     interface IUpdateUserReaction {
@@ -253,5 +336,10 @@ class PostAdapter(val context: Context, val postItems: MutableList<Post>, val us
             newReactionType: String,
             position: Int
         )
+    }
+
+    interface IPostMoreAction {
+        fun updatePost(post: Post)
+        fun deletePost(postId: Int, mAdapterPosition: Int)
     }
 }

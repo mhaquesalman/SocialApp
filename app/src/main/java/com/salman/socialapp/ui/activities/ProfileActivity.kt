@@ -1,3 +1,5 @@
+@file:Suppress("MoveLambdaOutsideParentheses")
+
 package com.salman.socialapp.ui.activities
 
 import android.app.ActivityOptions
@@ -7,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Looper
 import android.util.Log
 import android.util.Pair
 import android.view.View
@@ -21,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.esafirm.imagepicker.features.ImagePicker
+import com.esafirm.imagepicker.model.Image
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
@@ -34,6 +38,9 @@ import com.salman.socialapp.viewmodels.ProfileViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import id.zelory.compressor.Compressor
 import kotlinx.android.synthetic.main.activity_profile.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
@@ -43,7 +50,8 @@ import java.io.IOException
 
 private const val TAG = "ProfileActivity"
 class ProfileActivity : AppCompatActivity(),
-    PostAdapter.IUpdateUserReaction, IOnCommentAdded {
+    PostAdapter.IUpdateUserReaction,
+    IOnCommentAdded, PostAdapter.IPostMoreAction {
 
 /*
 * 0 = profile is still loading
@@ -66,6 +74,7 @@ class ProfileActivity : AppCompatActivity(),
     var currentUserId: String? = ""
     var limit = 5
     var offset = 0
+    var isPostEditable = false
     var isFirstLoading = true
     var isDataAvailable = true
     private val postItems: MutableList<Post> = ArrayList()
@@ -80,18 +89,29 @@ class ProfileActivity : AppCompatActivity(),
         setSupportActionBar(toolbar)
         toolbar.setNavigationIcon(R.drawable.ic_back)
         toolbar.setNavigationOnClickListener {
-            onBackPressed()
+            super.onBackPressed()
         }
+        
+        initialization()
+        // get user from sharedRef
+        getUserFromSharedPref()
 
         if (intent != null)
         userId = intent.getStringExtra(USER_ID)
 
         if (userId.equals(FirebaseAuth.getInstance().uid)) {
             currentState = 5
+            isPostEditable = true
         } else {
             action_btn.text = "Loading"
             action_btn.isEnabled = false
+            isPostEditable = false
         }
+
+        // fetching user's profile data
+        fetchProfileInfo()
+        // view profile & cover picture
+        clickToSeeImage()
 
         swipe.setOnRefreshListener {
             offset = 0
@@ -108,14 +128,16 @@ class ProfileActivity : AppCompatActivity(),
             }
         })
 
-        initialization()
-        // get user from sharedRef
-        getUserFromSharedPref()
-        // fetching user's profile data
-        fetchProfileInfo()
-        // view profile & cover picture
-        clickToSeeImage()
+    }
 
+/*    override fun onResume() {
+        super.onResume()
+        loadProfilePosts()
+    } */
+
+    override fun onStart() {
+        super.onStart()
+        loadProfilePosts()
     }
 
     override fun onStop() {
@@ -149,7 +171,7 @@ class ProfileActivity : AppCompatActivity(),
         val layoutManager: LinearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
         val position = layoutManager.findLastCompletelyVisibleItemPosition()
         val numberOfItems = postAdapter!!.itemCount
-        Log.d(TAG, "position: " + position + "numberOfItems: " + numberOfItems)
+        Log.d(TAG, "position: " + position + " numberOfItems: " + numberOfItems)
         return (position >= numberOfItems - 1)
     }
 
@@ -173,8 +195,7 @@ class ProfileActivity : AppCompatActivity(),
 //          var pairs: Array<Pair<View, String>> = arrayOf()
 //          pairs[0] = Pair<View, String>(imageview, imageUrl)
             val pair = Pair<View, String>(imageview, imageUrl)
-            val activityOptions =
-                ActivityOptions.makeSceneTransitionAnimation(this, pair)
+            val activityOptions = ActivityOptions.makeSceneTransitionAnimation(this, pair)
             startActivity(intent, activityOptions.toBundle())
         } else {
             startActivity(intent)
@@ -184,7 +205,7 @@ class ProfileActivity : AppCompatActivity(),
     private fun fetchProfileInfo() {
         progressDialog.show()
         val params = HashMap<String, String>()
-        params.put("userId", FirebaseAuth.getInstance().uid!!)
+        params.put("userId", currentUserId!!)
         if (currentState == 5) {
             params.put("current_state", currentState.toString())
         } else {
@@ -192,6 +213,7 @@ class ProfileActivity : AppCompatActivity(),
         }
 
         profileViewModel.fetchProfileInfo(params)?.observe(this, Observer { profileResponse ->
+            Log.d(TAG, "fetchProfileInfo: $profileResponse")
             progressDialog.hide()
             if (profileResponse.status == 200) {
                 collapsing_toolbar.title = profileResponse.profile?.name
@@ -236,7 +258,7 @@ class ProfileActivity : AppCompatActivity(),
                 }
                 action_btn.isEnabled = true
                 loadProfileOptionButton()
-                loadProfilePosts()
+//                loadProfilePosts()
             } else {
                 Toast.makeText(this, profileResponse.message, Toast.LENGTH_LONG).show()
             }
@@ -265,8 +287,9 @@ class ProfileActivity : AppCompatActivity(),
 //                postAdapter?.updateList(postResponse.posts)
 
                 if (isFirstLoading) {
-                    postAdapter = PostAdapter(this, postItems)
+                    postAdapter = PostAdapter(this, postItems, currentUserId!!, isPostEditable)
                     recyclerView.adapter = postAdapter
+                    postAdapter?.setOnPostMoreAction(this)
                 } else {
                     postAdapter?.itemRangeInserted(postItems.size, postResponse.posts.size)
                 }
@@ -285,7 +308,6 @@ class ProfileActivity : AppCompatActivity(),
                 showToast(postResponse.message)
             }
         })
-
     }
 
     private fun loadProfileOptionButton() {
@@ -433,28 +455,28 @@ class ProfileActivity : AppCompatActivity(),
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (ImagePicker.shouldHandle(requestCode, resultCode, data)) {
-            val selectedImage = ImagePicker.getFirstImageOrNull(data)
-            try {
-                compressedImageFile = Compressor(this).setQuality(75).compressToFile(File(selectedImage.path))
-                uploadImageWithName(compressedImageFile)
-            } catch (e : IOException) {
-                Toast.makeText(this, "Image Picker Failed !", Toast.LENGTH_SHORT).show()
+            if (ImagePicker.shouldHandle(requestCode, resultCode, data)) {
+                val selectedImage: Image = ImagePicker.getFirstImageOrNull(data)
+                try {
+                    compressedImageFile = Compressor(this).setQuality(80).compressToFile(File(selectedImage.path))
+                    uploadImageWithName(compressedImageFile)
+                } catch (e : IOException) {
+                    Toast.makeText(this, "Image Picker Failed !", Toast.LENGTH_SHORT).show()
+                }
             }
-
-        }
     }
 
     private fun uploadImageWithName(compressedImageFile: File?) {
         progressDialog.show()
         val builder = MultipartBody.Builder().apply {
             setType(MultipartBody.FORM)
-            addFormDataPart("uid", FirebaseAuth.getInstance().uid.toString())
+            addFormDataPart("uid", currentUserId!!)
 
             compressedImageFile?.let { imageFile ->
                 addFormDataPart("isCoverImage", isCoverImage.toString())
 
-                val createRequestBody = RequestBody.create("multipart/form-data".toMediaTypeOrNull(), imageFile)
+                val createRequestBody =
+                    RequestBody.create("multipart/form-data".toMediaTypeOrNull(), imageFile)
 
                 // alternate to RequestBody.create() method
 //              val createRequestBody = imageFile.asRequestBody("multipart/form-data".toMediaTypeOrNull())
@@ -475,7 +497,7 @@ class ProfileActivity : AppCompatActivity(),
         profileViewModel.uploadPost(multipartBody, true)?.observe(this, Observer { uploadResponse ->
             progressDialog.hide()
 //          Toast.makeText(this, uploadResponse.message, Toast.LENGTH_LONG).show()
-            Snackbar.make(rootView, uploadResponse.message+"", Snackbar.LENGTH_LONG).show()
+            Snackbar.make(rootView, uploadResponse.message.toString(), Snackbar.LENGTH_LONG).show()
             if (uploadResponse.status == 200) {
                 if (isImageSelected) {
                     if (isCoverImage) {
@@ -493,7 +515,6 @@ class ProfileActivity : AppCompatActivity(),
                 }
             }
         })
-
     }
 
     private fun showNameChangeDialog() {
@@ -537,6 +558,36 @@ class ProfileActivity : AppCompatActivity(),
 
     override fun onCommentAdded(position: Int) {
         postAdapter?.updateCommentCount(position)
+    }
+
+    override fun updatePost(post: Post) {
+        val mIntent = Intent(this, PostUploadActivity::class.java).apply {
+            putExtra("profileUrl", post.profileUrl)
+            putExtra("postId", post.postId)
+            putExtra("postTitle", post.post)
+            putExtra("postImage", post.statusImage)
+            putExtra("postPrivacy", post.privacy?.toInt())
+            putExtra("editPost", true)
+        }
+        startActivity(mIntent)
+    }
+
+    override fun deletePost(postId: Int, mAdapterPosition: Int) {
+        val snackBar =
+            Snackbar.make(rootView, "Confirm delete ? Or swipe to cancel", Snackbar.LENGTH_INDEFINITE)
+        snackBar.setAction(
+            "YES", {
+//                Log.d(TAG, "deletePost: $postId | $mAdapterPosition")
+                profileViewModel.deletePost(postId.toString())?.observe(this, Observer {
+                showToast(it.message)
+                if (it.status == 200) {
+                    postAdapter?.notifyItemRemoved(mAdapterPosition)
+                }
+            })
+        })
+        snackBar.setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
+        snackBar.show()
+
     }
 
 }

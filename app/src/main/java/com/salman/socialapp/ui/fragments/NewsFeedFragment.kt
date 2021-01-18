@@ -61,11 +61,6 @@ class NewsFeedFragment : Fragment() {
         fetchNewsFeed()
     }
 
-    override fun onResume() {
-        super.onResume()
-//        fetchNewsFeed()
-    }
-
     private fun initialization() {
         mainViewModel = ViewModelProvider(mContext as FragmentActivity, ViewModelFactory()).get(MainViewModel::class.java)
         newsFeedRV.layoutManager = LinearLayoutManager(mContext)
@@ -141,8 +136,8 @@ class NewsFeedFragment : Fragment() {
         })
     }
 
-    override fun onStop() {
-        super.onStop()
+    override fun onDestroyView() {
+        super.onDestroyView()
         offset = 0
         postItems.clear()
         isFirstLoading = true

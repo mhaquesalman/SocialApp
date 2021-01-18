@@ -9,4 +9,6 @@ class PostUploadViewModel(val repository: Repository?) : ViewModel() {
     fun uploadPost(body: MultipartBody, isCoverOrProfileImg: Boolean) =
         repository?.uploadPost(body, isCoverOrProfileImg)
 
+    fun updatePost(body: MultipartBody) = repository?.updatePost(body)
+
 }

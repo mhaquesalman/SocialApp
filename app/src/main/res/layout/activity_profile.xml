@@ -110,6 +110,7 @@
         android:layout_marginBottom="8dp"
         android:visibility="gone"
         tools:visibility="visible"
+        android:indeterminateTint="@color/colorPrimaryDark"
         android:layout_gravity="bottom|center"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

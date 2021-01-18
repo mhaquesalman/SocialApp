@@ -97,6 +97,7 @@ class Repository(val apiService: ApiService?) {
                 } else {
                     val gson = Gson()
                     val postUploadResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
                         gson.fromJson(response.errorBody()?.toString(), PostUploadResponse::class.java)
                     } catch (e: IOException) {
                         val errorMessage = ApiError.getErrorFromException(e)
@@ -107,11 +108,67 @@ class Repository(val apiService: ApiService?) {
             }
             override fun onFailure(call: Call<PostUploadResponse>, t: Throwable) {
                 val errorMessage = ApiError.getErrorFromThrowable(t)
-                val profileResponse = PostUploadResponse(message = errorMessage.message, status = errorMessage.status)
-                postUploadLiveData.postValue(profileResponse)
+                val postUpdateResponse = PostUploadResponse(message = errorMessage.message, status = errorMessage.status)
+                postUploadLiveData.postValue(postUpdateResponse)
             }
         })
         return postUploadLiveData
+    }
+
+    fun updatePost(body: MultipartBody): LiveData<PostUploadResponse> {
+        val postUpdateLiveData: MutableLiveData<PostUploadResponse> = MutableLiveData()
+        val call = apiService?.updatePost(body)
+        call?.enqueue(object : Callback<PostUploadResponse> {
+            override fun onResponse(call: Call<PostUploadResponse>, response: Response<PostUploadResponse>) {
+                if (response.isSuccessful) {
+                    postUpdateLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val postUpdateResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.toString(), PostUploadResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        PostUploadResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+                    postUpdateLiveData.postValue(postUpdateResponse)
+                }
+            }
+            override fun onFailure(call: Call<PostUploadResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val postUpdateResponse = PostUploadResponse(message = errorMessage.message, status = errorMessage.status)
+                postUpdateLiveData.postValue(postUpdateResponse)
+            }
+        })
+        return postUpdateLiveData
+    }
+
+    fun deletePost(postId: String): LiveData<PostUploadResponse> {
+        val postDeleteLiveData: MutableLiveData<PostUploadResponse> = MutableLiveData()
+        val call = apiService?.deletePost(postId)
+        call?.enqueue(object : Callback<PostUploadResponse> {
+            override fun onResponse(call: Call<PostUploadResponse>, response: Response<PostUploadResponse>) {
+                if (response.isSuccessful) {
+                    postDeleteLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val postDeleteResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.toString(), PostUploadResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        PostUploadResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+                    postDeleteLiveData.postValue(postDeleteResponse)
+                }
+            }
+            override fun onFailure(call: Call<PostUploadResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val postDeleteResponse = PostUploadResponse(message = errorMessage.message, status = errorMessage.status)
+                postDeleteLiveData.postValue(postDeleteResponse)
+            }
+        })
+        return postDeleteLiveData
     }
 
     fun search(params: Map<String, String>): LiveData<SearchResponse> {

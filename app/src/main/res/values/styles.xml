@@ -35,4 +35,22 @@
         <item name="android:textColor">@android:color/white</item>
     </style>
 
+    <style name="bottomSheetTVTheme">
+        <item name="android:textAppearance">@style/TextAppearance.AppCompat.Title</item>
+        <item name="android:background">?android:attr/selectableItemBackground</item>
+        <item name="android:drawablePadding">8dp</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="drawableTint">@color/colorPrimaryDark</item>
+    </style>
+
+<!-- Round corner for BottomSheetDialog -->
+    <style name="BottomSheetDialog" parent="Theme.Design.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/bottomSheetStyleWrapper</item>
+    </style>
+
+    <style name="bottomSheetStyleWrapper" parent="Widget.Design.BottomSheet.Modal">
+        <item name="android:background">@android:color/transparent</item>
+    </style>
 </resources>

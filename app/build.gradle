@@ -28,6 +28,10 @@ android {
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
+    }
+
     packagingOptions {
         exclude 'META-INF/rxjava.properties'
     }
@@ -62,6 +66,10 @@ dependencies {
     implementation 'com.github.esafirm.android-image-picker:imagepicker:2.3.1' // image picker
     implementation 'com.github.esafirm.android-image-picker:rximagepicker:2.3.1' // image picker
     implementation 'id.zelory:compressor:2.1.0' // compress image
+
+    // Coroutines
+    def coroutines_version = "1.1.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
 
     // zoom and fullscreen to imageview
     implementation 'com.github.chrisbanes:PhotoView:2.3.0'

@@ -31,11 +31,11 @@
                 android:id="@+id/post_btn"
                 android:text="Post"
                 android:textStyle="bold"
-                android:textSize="18sp"
+                android:textSize="16sp"
                 android:textColor="@android:color/white"
                 android:textAllCaps="true"
-                android:layout_marginLeft="24dp"
-                android:layout_marginRight="24dp"
+                android:layout_marginLeft="22dp"
+                android:layout_marginRight="22dp"
                 android:layout_alignParentEnd="true"/>
 
         </RelativeLayout>
@@ -70,7 +70,7 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_toRightOf="@id/cardView"
+                android:layout_toEndOf="@id/cardView"
                 app:helperText="Should be less than 100 characters"
                 android:layout_marginTop="16dp"
                 android:layout_marginRight="16dp"
@@ -96,16 +96,40 @@
             android:layout_height="match_parent"
             android:id="@+id/add_imgBtn"
             android:src="@drawable/ic_add_photo"
+            android:visibility="visible"
             android:layout_gravity="center"/>
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/delete_imgBtn"
+            android:src="@drawable/ic_close"
+            android:layout_marginTop="15dp"
+            android:visibility="gone"
+            android:background="@drawable/circle_bg"
+            android:layout_gravity="center_horizontal"
+            android:padding="5dp" />
+
         <ImageView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/imagePreview"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="15dp"
             android:visibility="gone"
             android:adjustViewBounds="true"
             android:scaleType="centerInside"
+            android:src="@drawable/cover_picture_placeholder"
             android:maxHeight="300dp"/>
+
+        <ImageView
+            android:layout_width="45dp"
+            android:layout_height="45dp"
+            android:id="@+id/update_imgBtn"
+            android:src="@drawable/ic_add_photo"
+            android:visibility="gone"
+            android:layout_gravity="center"
+            android:layout_marginTop="15dp"/>
+
     </LinearLayout>
 
 </RelativeLayout>

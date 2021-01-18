@@ -22,4 +22,6 @@ class ProfileViewModel(val repository: Repository?): ViewModel() {
 
     fun performReaction(performReaction: PerformReaction) =
         repository?.performReaction(performReaction)
+
+    fun deletePost(postId: String) = repository?.deletePost(postId)
 }

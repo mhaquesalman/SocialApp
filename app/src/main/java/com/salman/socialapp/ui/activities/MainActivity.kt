@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
     val newsFeedFragment = NewsFeedFragment.getInstance()
     val friendsFragment = FriendsFragment.getInstance()
     var currentUserId: String? = ""
+    var userImage: String? = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,18 +41,20 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
         setFragment(newsFeedFragment)
         setBottomNavigationView()
 
+        // get user from sharedRef
+        getUserFromSharedPref()
+
         mainViewModel = ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java)
 
         fab.setOnClickListener {
-            startActivity(Intent(this, PostUploadActivity::class.java))
+            startActivity(Intent(this, PostUploadActivity::class.java)
+                .putExtra("profileUrl", userImage)
+                .putExtra("editPost", false))
         }
 
         toolbar_search.setOnClickListener {
             startActivity(Intent(this, SearchActivity::class.java))
         }
-
-        // get user from sharedRef
-        getUserFromSharedPref()
 
     }
 
@@ -59,8 +62,10 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
         Utils(this).apply {
             val userInfo = getUserFromSharedPref()
             Log.d(TAG, "UserInfo: $userInfo")
-            if (userInfo != null)
+            if (userInfo != null) {
                 currentUserId = userInfo.uid
+                userImage = userInfo.profileUrl
+            }
         }
     }
 

@@ -13,6 +13,12 @@ interface ApiService {
     @POST("uploadpost")
     fun uploadPost(@Body body: MultipartBody): Call<PostUploadResponse>
 
+    @POST("updatepost")
+    fun updatePost(@Body body: MultipartBody): Call<PostUploadResponse>
+
+    @GET("deletepost")
+    fun deletePost(@Query("postId") postId: String): Call<PostUploadResponse>
+
     @POST("uploadImage")
     fun uploadImage(@Body body: MultipartBody): Call<PostUploadResponse>
 

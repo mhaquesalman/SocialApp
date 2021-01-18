@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 
 //const val BASE_URL = "http://192.168.1.3/socialapp/public/"
 //const val BASE_URL = "http://192.168.1.4/socialapp/public/"
-const val BASE_URL = "http://192.168.1.6/socialapp/public/"
+const val BASE_URL = "http://192.168.1.5/socialapp/public/"
 class ApiClient {
 
     companion object {
