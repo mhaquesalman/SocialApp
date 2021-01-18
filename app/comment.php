@@ -252,5 +252,3 @@
         $query= $query->fetchALL(PDO::FETCH_ASSOC);
 		return ($query[0]['totalCount']);
     }
-
-?>

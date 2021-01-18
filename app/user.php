@@ -176,7 +176,6 @@ $app->post('/uploadImage',function($request,  $response,  $args) {
 
     }
 
-    
     if(isset($request->getParsedBody()['name'])) {
         $name = $request->getParsedBody()['name'];
         $query = "UPDATE  `users` SET `name` = :name WHERE `uid` = :uid; ";
@@ -228,7 +227,7 @@ $app->get('/search',function($request,  $response,  $args){
 
 });
 
-//Api for personalized timeline
+//Api for showing personalized timeline
 $app->get('/getnewsfeed',function($request,  $response,  $args){
 	include __DIR__ . '/../bootstrap/dbconnection.php';
   
@@ -287,7 +286,6 @@ $app->get('/loadprofileposts',function($request,  $response,  $args){
    $uid = $request->getQueryParams()['uid'];
    $limit = $request->getQueryParams()['limit'];
    $offset = $request->getQueryParams()['offset'];
- 
    $current_state = $request->getQueryParams()['current_state'];
   
    $query =  $pdo->prepare("SELECT * from `users` WHERE `uid` = :uid LIMIT 1");
@@ -323,7 +321,7 @@ $app->get('/loadprofileposts',function($request,  $response,  $args){
 
 	  /*
 		-> our own profile,
-		-> can view only me, friends and public  privacy level post
+		-> can view only me, friends and public privacy level post
 	  */
 
 	  $query = " SELECT * FROM `posts` WHERE `postUserId` = :uid ORDER By statusTime DESC"; 

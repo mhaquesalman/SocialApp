@@ -1,5 +1,6 @@
 <?php
 
+//Api for inserting post
 $app->post('/uploadpost', function ( $request,  $response,  $args) {
 
     /* 
@@ -54,9 +55,114 @@ return $response->withHeader('Content-Type', 'application/json')->withStatus(200
 
 });
 
+
+//Api for updating post
+$app->post('/updatepost', function ( $request,  $response,  $args) {
+
+    /* 
+        privacy level flag
+        0  => friends
+        1  => only me
+        2  = > public
+
+    */
+
+include __DIR__ . '/../bootstrap/dbconnection.php';
+
+$output = array();
+
+$postId = $request->getParsedBody()['postId'];
+$post = $request->getParsedBody()['post'];
+$privacy = $request->getParsedBody()['privacy'];
+$statusImage = "";
+
+ if(isset($_FILES['file']['tmp_name'])){
+        if (move_uploaded_file( $_FILES ['file'] ["tmp_name"], "../uploads/" . $_FILES ["file"] ["name"] )) {
+            $statusImage = "../uploads/" . $_FILES ["file"] ["name"];
+        }else{
+            
+            $output['status']  = 500;
+            $output['message'] = "Couldn't Upload Image to Server !";
+
+            $payload = json_encode($output);
+            $response->getBody()->write($payload);
+
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    } else {
+        $statusImage = $request->getParsedBody()['postImage'];
+    }
+
+
+$query = "UPDATE `posts` SET `post` = :post, `statusImage` = :postImage, 
+`privacy` = :privacy, `statusTime` = current_timestamp() WHERE `postId` = :postId; ";
+
+$query = $pdo->prepare($query);
+$query->bindParam(':postId', $postId, PDO::PARAM_INT);
+$query->bindParam(':post', $post, PDO::PARAM_STR);
+$query->bindParam(':postImage', $statusImage, PDO::PARAM_STR);
+$query->bindParam(':privacy', $privacy, PDO::PARAM_INT);
+$query->execute();
+
+$errorData = $query->errorInfo();
+if($errorData[1]){
+    return checkError($response, $errorData);
+}
+
+$output['status']  = 200;
+$output['message'] = "Post Updated Successfully !";
+
+$payload = json_encode($output);
+$response->getBody()->write($payload);
+return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
+});
+
+
+//Api for deleting post
+$app->get('/deletepost', function ( $request,  $response,  $args) {
+
+    /* 
+        privacy level flag
+        0  => friends
+        1  => only me
+        2  => public
+
+    */
+
+include __DIR__ . '/../bootstrap/dbconnection.php';
+
+$output = array();
+$postId = $request->getQueryParams()['postId'];
+
+/* $query = $pdo->prepare(" DELETE `posts.*`, `timeline.*` 
+FROM `posts` INNER JOIN `timeline` 
+WHERE posts.postId = timeline.postId AND posts.postId = :postId "); */
+
+$query = $pdo->prepare(" DELETE `posts`, `timeline` 
+FROM `posts` INNER JOIN `timeline`
+ON posts.postId = timeline.postId WHERE posts.postId = :postId ");
+
+$query->bindParam(':postId', $postId, PDO::PARAM_INT);
+$query->execute();
+
+$errorData = $query->errorInfo();
+if($errorData[1]){
+    return checkError($response, $errorData);
+}
+
+$output['status']  = 200;
+$output['message'] = "Post Deleted Successfully !";
+
+$payload = json_encode($output);
+$response->getBody()->write($payload);
+return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+
+});
+
+
 //Api for add/remove reaction
 $app->post('/performreaction',function($request, $response,  $args){
-
 
     include __DIR__ .'/../bootstrap/dbconnection.php';
 
