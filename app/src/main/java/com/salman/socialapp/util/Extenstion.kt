@@ -13,6 +13,6 @@ fun ProgressBar.hide() {
     visibility = View.GONE
 }
 
-fun Context.showToast(message: String? =null, duration: Int = Toast.LENGTH_LONG) {
+fun Context.showToast(message: String? = null, duration: Int = Toast.LENGTH_LONG) {
     Toast.makeText(this, message, duration).show()
 }

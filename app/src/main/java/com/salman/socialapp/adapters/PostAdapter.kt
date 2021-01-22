@@ -2,6 +2,7 @@ package com.salman.socialapp.adapters
 
 import android.app.Dialog
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
@@ -21,10 +22,12 @@ import com.amrdeveloper.reactbutton.FbReactions
 import com.amrdeveloper.reactbutton.ReactButton
 import com.bumptech.glide.Glide
 import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.gson.Gson
 import com.salman.socialapp.R
 import com.salman.socialapp.model.Post
 import com.salman.socialapp.model.Reaction
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.ui.activities.PostDetailActivity
 import com.salman.socialapp.util.CommentsBottomDialog
 import com.salman.socialapp.util.Utils
 import de.hdodenhof.circleimageview.CircleImageView
@@ -176,6 +179,14 @@ class PostAdapter(
             else -> holder.commentCount.text = "$totalComment Comments"
         }
 
+        holder.itemView.setOnClickListener {
+            val mIntent = Intent(context, PostDetailActivity::class.java).apply {
+                putExtra("post", Gson().toJson(post))
+                putExtra("loadFromApi", false)
+                putExtra("position", holder.adapterPosition)
+            }
+            context.startActivity(mIntent)
+        }
 
     }
 

@@ -28,6 +28,9 @@ class ViewModelFactory : ViewModelProvider.NewInstanceFactory() {
             modelClass.isAssignableFrom(PostUploadViewModel::class.java) -> {
                 PostUploadViewModel(repository) as T
             }
+            modelClass.isAssignableFrom(PostDetailViewModel::class.java) -> {
+                PostDetailViewModel(repository) as T
+            }
             modelClass.isAssignableFrom(SearchViewModel::class.java) -> {
                 SearchViewModel(repository) as T
             }

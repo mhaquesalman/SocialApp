@@ -574,7 +574,7 @@ class ProfileActivity : AppCompatActivity(),
 
     override fun deletePost(postId: Int, mAdapterPosition: Int) {
         val snackBar =
-            Snackbar.make(rootView, "Confirm delete ? Or swipe to cancel", Snackbar.LENGTH_INDEFINITE)
+            Snackbar.make(rootView, "Confirm delete ? Or swipe to cancel", Snackbar.LENGTH_LONG)
         snackBar.setAction(
             "YES", {
 //                Log.d(TAG, "deletePost: $postId | $mAdapterPosition")

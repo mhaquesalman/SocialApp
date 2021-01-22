@@ -5,6 +5,8 @@ import android.app.Dialog
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -34,6 +36,7 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
     lateinit var commentRecView: RecyclerView
     lateinit var commentET: EditText
     lateinit var commentSendBtn: RelativeLayout
+    lateinit var progressBar: ProgressBar
     lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     var bottomSheet: FrameLayout? = null
 
@@ -100,6 +103,7 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
         commentRecView = view.commentRV
         commentET = view.comment_txt
         commentSendBtn = view.comment_send
+        progressBar = view.progress_bar
 
         when (commentCount) {
             0, 1 -> commentCountTV.text = "$commentCount Comment"
@@ -119,18 +123,37 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
 
         }
 
+        commentET.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(p0: Editable?) {
+                /**/
+            }
+
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+                /**/
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (s!!.length >= 1) {
+                    commentSendBtn.alpha = 1f
+                    commentSendBtn.isEnabled = true
+                } else {
+                    commentSendBtn.alpha = 0.4f
+                    commentSendBtn.isEnabled = false
+                }
+            }
+        })
+
         commentSendBtn.setOnClickListener {
             val commentText = commentET.text.toString()
             if (commentText.isEmpty()) {
-                it.isEnabled = false
-                mContext.showToast("please enter your comment !")
+                mContext.showToast("please type your comment !", Toast.LENGTH_SHORT)
+
             } else {
-                it.isEnabled = true
                 val inputMethodManager =
                     mContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
                 inputMethodManager.hideSoftInputFromWindow(it.windowToken, 0)
                 commentET.setText("")
-
+                // post comment
                 postComment(commentText)
 
             }
@@ -173,7 +196,9 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
     }
 
     private fun getPostComments() {
+        progressBar.show()
         commentViewModel.getPostComments(postId!!, postUserId!!)?.observe(this, Observer { commentResponse ->
+            progressBar.hide()
             if (commentResponse.status == 200) {
                 commentItems.clear()
                 commentItems.addAll(commentResponse.comments)
