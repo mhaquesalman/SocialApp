@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_marginBottom="8dp"
     android:layout_marginEnd="8dp"
     android:layout_marginStart="8dp"
@@ -20,9 +20,7 @@
             android:layout_width="65dp"
             android:layout_height="65dp"
             android:id="@+id/profile_image"
-            android:layout_centerInParent="true"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentTop="true"
+            android:layout_centerVertical="true"
             android:layout_marginStart="10dp"
             android:src="@drawable/default_profile_placeholder" />
 
@@ -31,18 +29,29 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_toEndOf="@+id/profile_image"
+            android:ellipsize="end"
             android:fontFamily="sans-serif-condensed"
-            android:paddingLeft="16dp"
-            android:paddingRight="16dp"
-            android:text="Person Name"
             android:maxWidth="220dp"
             android:maxLines="1"
-            android:ellipsize="end"
-            android:textStyle="bold"
-            android:textAllCaps="false"
-            android:layout_centerInParent="true"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:layout_marginTop="16dp"
+            tools:text="Person Name"
             android:textColor="@color/cardview_dark_background"
-            android:textSize="15sp" />
+            android:textSize="15sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/online_status"
+            android:layout_toEndOf="@id/profile_image"
+            android:layout_below="@id/profile_title"
+            android:paddingLeft="16dp"
+            android:paddingRight="16dp"
+            android:text="Active"
+            android:textStyle="italic|bold"
+            android:textColor="@color/green"/>
 
         <Button
             android:id="@+id/accept_btn"
@@ -52,12 +61,13 @@
             android:minWidth="0dp"
             android:minHeight="0dp"
             style="@style/Widget.AppCompat.Button.Small"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="12dp"
             android:layout_marginTop="2dp"
-            android:text="Accept"
+            android:text="@string/accept_btn_txt"
+            android:textStyle="italic"
             android:textAllCaps="false"
             android:visibility="visible"
-            android:textColor="#FFF" />
+            android:textColor="@color/accept_txt_color" />
 
         <Button
             android:id="@+id/cancel_btn"
@@ -68,12 +78,13 @@
             android:minWidth="0dp"
             android:minHeight="0dp"
             style="@style/Widget.AppCompat.Button.Small"
-            android:layout_marginEnd="16dp"
+            android:layout_marginEnd="12dp"
             android:layout_marginTop="2dp"
             android:layout_marginBottom="2dp"
-            android:text="Cancel"
+            android:text="@string/cancel_btn_txt"
+            android:textStyle="italic"
             android:textAllCaps="false"
             android:visibility="visible"
-            android:textColor="#FFF" />
+            android:textColor="@color/cancel_txt_color" />
     </RelativeLayout>
 </androidx.cardview.widget.CardView>

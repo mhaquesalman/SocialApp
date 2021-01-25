@@ -51,6 +51,14 @@ class FriendsAdapter(val context: Context) : RecyclerView.Adapter<FriendsAdapter
                 .into(holder.profileImage)
         }
 
+        if (friend.userToken!!.isEmpty()) {
+            holder.onlineStatus.text = "Not active"
+            holder.onlineStatus.setTextColor(context.resources.getColor(R.color.red))
+        } else {
+            holder.onlineStatus.text = "Active"
+            holder.onlineStatus.setTextColor(context.resources.getColor(R.color.green))
+        }
+
         holder.item.setOnClickListener {
             context.startActivity(Intent(context, ProfileActivity::class.java)
                 .putExtra(USER_ID, friendList.get(holder.adapterPosition).uid))
@@ -66,11 +74,12 @@ class FriendsAdapter(val context: Context) : RecyclerView.Adapter<FriendsAdapter
         val profileImage: CircleImageView = itemView.profile_image
         val acceptButton: Button = itemView.accept_btn
         val cancelButton: Button = itemView.cancel_btn
+        val onlineStatus: TextView = itemView.online_status
         val item: View = itemView
 
         init {
-            acceptButton.visibility = View.INVISIBLE
-            cancelButton.visibility = View.INVISIBLE
+            acceptButton.visibility = View.GONE
+            cancelButton.visibility = View.GONE
         }
     }
 

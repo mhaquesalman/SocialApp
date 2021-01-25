@@ -15,6 +15,7 @@ import com.salman.socialapp.adapters.PostAdapter
 import com.salman.socialapp.model.PerformAction
 import com.salman.socialapp.ui.fragments.FriendsFragment
 import com.salman.socialapp.ui.fragments.NewsFeedFragment
+import com.salman.socialapp.ui.fragments.NotificationFragment
 import com.salman.socialapp.util.CommentsBottomDialog
 import com.salman.socialapp.util.IOnCommentAdded
 import com.salman.socialapp.util.Utils
@@ -31,6 +32,7 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
     lateinit var mainViewModel: MainViewModel
     val newsFeedFragment = NewsFeedFragment.getInstance()
     val friendsFragment = FriendsFragment.getInstance()
+    val notificationFragment = NotificationFragment.getInstance()
     var currentUserId: String? = ""
     var userImage: String? = ""
 
@@ -38,7 +40,15 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setFragment(newsFeedFragment)
+        if (intent.extras != null) {
+            if (intent.extras!!.containsKey("isFromNotification"))
+                setFragment(notificationFragment)
+            bottomNavigation.menu.findItem(R.id.notificationFragment).setChecked(true)
+        } else {
+            setFragment(newsFeedFragment)
+        }
+
+        // set bottom navigation bar
         setBottomNavigationView()
 
         // get user from sharedRef
@@ -84,6 +94,10 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
                     startActivity(Intent(this, ProfileActivity::class.java)
                         .putExtra(USER_ID, currentUserId))
                     return@setOnNavigationItemSelectedListener false
+                }
+                R.id.notificationFragment -> {
+                    setFragment(notificationFragment)
+                    return@setOnNavigationItemSelectedListener true
                 }
             }
             return@setOnNavigationItemSelectedListener true

@@ -19,6 +19,9 @@ interface ApiService {
     @GET("deletepost")
     fun deletePost(@Query("postId") postId: String): Call<PostUploadResponse>
 
+    @GET("postdetail")
+    fun fetchPostDetail(@QueryMap params: Map<String, String>): Call<PostResponse>
+
     @POST("uploadImage")
     fun uploadImage(@Body body: MultipartBody): Call<PostUploadResponse>
 
@@ -30,6 +33,9 @@ interface ApiService {
 
     @GET("loadfriends")
     fun loadfriends(@Query("uid") uid: String): Call<FriendResponse>
+
+    @GET("getnotification")
+    fun getNotification(@Query("uid") uid: String): Call<NotificationResponse>
 
     @GET("getnewsfeed")
     fun getNewsFeed(@QueryMap params: Map<String, String>): Call<PostResponse>

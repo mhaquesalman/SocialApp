@@ -1,5 +1,6 @@
 package com.salman.socialapp.ui.activities
 
+import android.app.ProgressDialog
 import android.net.Uri
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -34,6 +35,7 @@ class PostDetailActivity : AppCompatActivity(), IOnCommentAdded {
     var userId: String? = ""
     lateinit var post: Post
     lateinit var postDetailViewModel: PostDetailViewModel
+    lateinit var progressDialog: ProgressDialog
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,21 +47,45 @@ class PostDetailActivity : AppCompatActivity(), IOnCommentAdded {
             onBackPressed()
         }
 
+        progressDialog = ProgressDialog(this).also {
+            it.setCancelable(false)
+            // set transparent background for custom progress dialog
+            it.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+
         postDetailViewModel = ViewModelProvider(this, ViewModelFactory()).get(PostDetailViewModel::class.java)
         with(Utils(this)){
             userId = getUserFromSharedPref()?.uid
         }
 
-        intent?.let {
-            if (it.getBooleanExtra("loadFromApi", false)) {
-                
+        if (intent != null) {
+            if (intent.getBooleanExtra("loadFromApi", false)) {
+                showProgressDiaglog()
+                val params = HashMap<String, String>()
+                val postId = intent.getStringExtra("postId")
+                params.put("postId", postId!!)
+                params.put("uid", userId!!)
+
+                postDetailViewModel.fetchPostDetail(params)?.observe(this, Observer { postResponse ->
+                    progressDialog.hide()
+                    if (postResponse.status == 200) {
+                        scrollView.visibility = View.VISIBLE
+                        post = postResponse.posts.get(0)
+                        showPostDetail()
+                    }
+                })
             } else {
                 scrollView.visibility = View.VISIBLE
-                position = it.getIntExtra("position", 0)
-                post = Gson().fromJson<Post>(it.getStringExtra("post"), Post::class.java)
+                position = intent.getIntExtra("position", 0)
+                post = Gson().fromJson<Post>(intent.getStringExtra("post"), Post::class.java)
                 showPostDetail()
             }
         }
+    }
+
+    private fun showProgressDiaglog() {
+        progressDialog.show()
+        progressDialog.setContentView(R.layout.custom_progress_dialog)
     }
 
     private fun showPostDetail() {

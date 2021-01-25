@@ -99,7 +99,12 @@ class FriendRequestAdapter(val context: Context) : RecyclerView.Adapter<FriendRe
           val profileImage: CircleImageView = itemView.profile_image
           val acceptButton: Button = itemView.accept_btn
           val cancelButton: Button = itemView.cancel_btn
+          val onlineStatus: TextView = itemView.online_status
           val item: View = itemView
+
+          init {
+              onlineStatus.visibility = View.GONE
+          }
     }
 
     interface OnClickPerformAction {

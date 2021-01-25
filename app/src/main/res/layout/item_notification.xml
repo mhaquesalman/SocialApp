@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="5dp"
+    android:layout_margin="5dp"
+    android:layout_marginBottom="5dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/item_background_color"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp">
+
+        <de.hdodenhof.circleimageview.CircleImageView
+            android:layout_width="65dp"
+            android:layout_height="65dp"
+            android:id="@+id/profile_image"
+            android:src="@drawable/default_profile_placeholder"
+            android:scaleType="centerCrop"
+            android:layout_marginStart="4dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/title"
+            android:text="Notifiaction title"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_toEndOf="@id/profile_image"
+            android:layout_marginStart="5dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/body"
+            android:text="Notifiaction body"
+            android:maxLines="1"
+            android:layout_below="@id/title"
+            android:layout_toEndOf="@id/profile_image"
+            android:layout_marginStart="5dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/date"
+            android:text="Notifiaction date"
+            android:textSize="12sp"
+            android:layout_below="@id/body"
+            android:layout_toEndOf="@id/profile_image"
+            android:layout_marginStart="5dp"/>
+
+    </RelativeLayout>
+
+</androidx.cardview.widget.CardView>

@@ -436,4 +436,63 @@ class Repository(val apiService: ApiService?) {
         })
         return getCommentRepliesLiveData
     }
+
+    fun getNotification(uid: String): MutableLiveData<NotificationResponse> {
+        val notificationsLiveData: MutableLiveData<NotificationResponse> = MutableLiveData()
+        val call = apiService?.getNotification(uid)
+        call?.enqueue(object : Callback<NotificationResponse> {
+            override fun onResponse(call: Call<NotificationResponse>, response: Response<NotificationResponse>) {
+                if (response.isSuccessful) {
+                    notificationsLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val notificationResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), NotificationResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        NotificationResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+
+                    notificationsLiveData.postValue(notificationResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<NotificationResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val notificationResponse = NotificationResponse(message = errorMessage.message, status = errorMessage.status)
+                notificationsLiveData.postValue(notificationResponse)
+            }
+        })
+        return notificationsLiveData
+    }
+
+    fun fetchPostDetail(params: Map<String, String>): LiveData<PostResponse> {
+        val postDetailLiveData: MutableLiveData<PostResponse> = MutableLiveData()
+        val call = apiService?.fetchPostDetail(params)
+        call?.enqueue(object : Callback<PostResponse> {
+            override fun onResponse(call: Call<PostResponse>, response: Response<PostResponse>) {
+                if (response.isSuccessful) {
+                    postDetailLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val postDetailResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.toString(), PostResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        PostResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+                    postDetailLiveData.postValue(postDetailResponse)
+
+                }
+            }
+            override fun onFailure(call: Call<PostResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val postResponse = PostResponse(message = errorMessage.message, status = errorMessage.status)
+                postDetailLiveData.postValue(postResponse)
+            }
+        })
+        return postDetailLiveData
+    }
 }
