@@ -253,7 +253,7 @@ $app->get('/getnewsfeed',function($request,  $response,  $args){
 	   return checkError($response, $errorData);
    }
   
-    $posts= $query->fetchAll(PDO::FETCH_OBJ);
+    $posts = $query->fetchAll(PDO::FETCH_OBJ);
     
 	// for reaction feature
 	foreach ($posts as $key => $value) {
@@ -377,7 +377,7 @@ $app->get('/loadprofileposts',function($request,  $response,  $args){
     $value->coverUrl     =  $userInfo->coverUrl;
     
     //for reaction feature
-	$reactionCheck = checkOurReact($uid,  $value->postId);
+	$reactionCheck = checkOurReact($uid, $value->postId);
 	if($reactionCheck){
 		$value->reactionType=$reactionCheck->reactionType;
 	}else{

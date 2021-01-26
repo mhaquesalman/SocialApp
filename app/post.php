@@ -160,6 +160,43 @@ return $response->withHeader('Content-Type', 'application/json')->withStatus(200
 
 });
 
+// fetching post details
+$app->get('/postdetail',function($request, $response,  $args){
+    include __DIR__ . '/../bootstrap/dbconnection.php';
+
+    $postId = $request->getQueryParams()['postId'];
+    $uid = $request->getQueryParams()['uid'];
+
+     $stmt = $pdo->prepare("SELECT posts.*, users.name, users.profileUrl, users.userToken
+                             FROM `posts` 
+                             LEFT join users
+                             ON posts.postUserId = users.uid
+                             WHERE `postId` = :postId");
+    $stmt->bindParam(':postId', $postId, PDO::PARAM_INT);		 
+    $stmt->execute();
+    $errorData = $stmt->errorInfo();
+    if($errorData[1]){
+        return checkError($response, $errorData);
+    }
+    $result[0] =$stmt->fetch(PDO::FETCH_OBJ);
+    
+    $reactionCheck = checkOurReact($uid, $result[0]->postId);
+    if($reactionCheck){
+     
+     $result[0]->reactionType=$reactionCheck->reactionType;
+    }else{
+     $result[0]->reactionType="default";
+    }
+ 
+     $output['status']  = 200;
+     $output['message'] = "Post Details Fetched";
+     $output['posts'] = $result;
+
+     $payload = json_encode($output,JSON_NUMERIC_CHECK);
+     $response->getBody()->write($payload);
+     return $response->withHeader('Content-Type', 'application/json')->withStatus(200);   
+    
+});
 
 //Api for add/remove reaction
 $app->post('/performreaction',function($request, $response,  $args){
@@ -226,6 +263,17 @@ $app->post('/performreaction',function($request, $response,  $args){
         if($errorData[1]){
         return checkError($response, $errorData);
         }  
+
+        // removing notification sincne user undo the given reaction
+        $nType = 'post-reaction';
+        $stmt = $pdo->prepare("DELETE FROM  `notifications` WHERE 
+        `notificationTo`=:notificationTo AND `notificationFrom` =:notificationFrom AND `postId` =:postId AND `type` =:type");
+        $stmt->bindParam(':notificationTo', $postOwnerId, PDO::PARAM_STR);
+        $stmt->bindParam(':notificationFrom', $userId, PDO::PARAM_STR);
+        $stmt->bindParam(':postId', $postId, PDO::PARAM_INT);
+        $stmt->bindParam(':type', $nType, PDO::PARAM_STR);
+        $stmt= $stmt->execute();
+
         $message = "Reaction Undo Successfull";
     }else{
         // previous = care, newReaction = wow
@@ -259,14 +307,11 @@ $app->post('/performreaction',function($request, $response,  $args){
         }
       }
        
-
         // increase counter of new reaction
         $stmt = $pdo->prepare(" UPDATE `posts` 
                             SET ". $newReactionColumn ." = " . $newReactionColumn ." +1 "." 
                             WHERE `postId` = :postId");
 
-        
-      
         $stmt->bindParam(":postId", $postId, PDO::PARAM_INT);
         $stmt->execute();
 
@@ -291,6 +336,11 @@ $app->post('/performreaction',function($request, $response,  $args){
         if($errorData[1]){
             return checkError($response, $errorData);
         }
+
+        if($userId != $postOwnerId){
+            sendNotification($postOwnerId, $userId, $postId, 'post-reaction');
+        }
+
         $message = "Reaction changed from ".$previousReactionType. " to ".$newReactionType;
     }
         // send back the updated reaction counts
@@ -318,12 +368,15 @@ function getReactionCount($postId){
                               from `posts` WHERE `postId` = :postId LIMIT 1");
 
 
-    $stmt->bindParam(':postId', $postId, PDO::PARAM_STR);
+    $stmt->bindParam(':postId', $postId, PDO::PARAM_INT);
     $stmt->execute();
     
     $errorData = $stmt->errorInfo();
+    if($errorData[1]){
+        return checkError($response, $errorData);
+    }
 
-    $userInfo =$stmt->fetch(PDO::FETCH_OBJ);
+    $userInfo = $stmt->fetch(PDO::FETCH_OBJ);
     return $userInfo;
 
     }
