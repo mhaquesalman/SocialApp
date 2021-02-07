@@ -49,6 +49,7 @@
             android:layout_below="@id/profile_title"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
+            android:visibility="invisible"
             android:text="Active"
             android:textStyle="italic|bold"
             android:textColor="@color/green"/>

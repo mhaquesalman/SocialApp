@@ -43,7 +43,6 @@
         android:id="@+id/progress_bar"
         android:visibility="gone"
         tools:visibility="visible"
-        android:indeterminateTint="@color/colorPrimaryDark"
         android:layout_centerInParent="true"/>
 
     <LinearLayout
@@ -59,7 +58,9 @@
             android:id="@+id/comment_txt"
             android:layout_weight="1"
             android:backgroundTint="@color/colorPrimaryDark"
-            android:layout_marginEnd="10dp" />
+            android:layout_marginEnd="10dp"
+            android:hint="Type comment.."
+            android:textColorHint="@color/ef_black_alpha_aa"/>
 
         <RelativeLayout
             android:layout_width="50dp"
@@ -70,8 +71,8 @@
             android:alpha="0.4"
             android:background="@drawable/comment_send_bg">
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
                 android:layout_centerInParent="true"
                 android:rotation="330"
                 android:src="@drawable/ic_send"/>

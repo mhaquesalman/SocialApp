@@ -9,7 +9,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Looper
 import android.util.Log
 import android.util.Pair
 import android.view.View
@@ -27,6 +26,8 @@ import com.esafirm.imagepicker.features.ImagePicker
 import com.esafirm.imagepicker.model.Image
 import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.PostAdapter
 import com.salman.socialapp.model.PerformAction
@@ -38,13 +39,9 @@ import com.salman.socialapp.viewmodels.ProfileViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import id.zelory.compressor.Compressor
 import kotlinx.android.synthetic.main.activity_profile.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
-import okhttp3.RequestBody.Companion.asRequestBody
 import java.io.File
 import java.io.IOException
 
@@ -458,7 +455,7 @@ class ProfileActivity : AppCompatActivity(),
             if (ImagePicker.shouldHandle(requestCode, resultCode, data)) {
                 val selectedImage: Image = ImagePicker.getFirstImageOrNull(data)
                 try {
-                    compressedImageFile = Compressor(this).setQuality(80).compressToFile(File(selectedImage.path))
+                    compressedImageFile = Compressor(this).setQuality(50).compressToFile(File(selectedImage.path))
                     uploadImageWithName(compressedImageFile)
                 } catch (e : IOException) {
                     Toast.makeText(this, "Image Picker Failed !", Toast.LENGTH_SHORT).show()
@@ -508,13 +505,32 @@ class ProfileActivity : AppCompatActivity(),
                         Glide.with(this)
                             .load(BASE_URL + uploadResponse.extra)
                             .into(profile_image)
+                        updateUserInFirebase(uploadResponse.extra, 0)
                     }
                 }
                 if (isNameChanged) {
                     collapsing_toolbar.title = uploadResponse.extra
+                    updateUserInFirebase(uploadResponse.extra, 1)
                 }
             }
         })
+    }
+
+    private fun updateUserInFirebase(data: String?, i: Int) {
+        val userRef: DatabaseReference = FirebaseDatabase.getInstance()
+            .getReference("fusers")
+            .child(currentUserId!!)
+        val hashMap: HashMap<String, Any> = HashMap()
+        when (i) {
+            0 -> {
+                hashMap["image"] = data!!
+                userRef.updateChildren(hashMap)
+            }
+            1 -> {
+                hashMap["name"] = data!!
+                userRef.updateChildren(hashMap)
+            }
+        }
     }
 
     private fun showNameChangeDialog() {

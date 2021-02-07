@@ -13,18 +13,19 @@ import com.bumptech.glide.Glide
 import com.salman.socialapp.R
 import com.salman.socialapp.model.Friend
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.ui.activities.MessageActivity
 import com.salman.socialapp.ui.activities.ProfileActivity
+import com.salman.socialapp.ui.activities.SendMessageActivity
 import com.salman.socialapp.ui.activities.USER_ID
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.item_friend.view.*
 
 class FriendsAdapter(val context: Context) : RecyclerView.Adapter<FriendsAdapter.FriendsViewHolder>() {
 
-    private var friendList: ArrayList<Friend> = ArrayList()
+    private var friendList: List<Friend> = ArrayList()
 
     fun updateList(list: List<Friend>) {
-        friendList.clear()
-        friendList.addAll(list)
+        friendList = list
         notifyDataSetChanged()
     }
 
@@ -51,17 +52,10 @@ class FriendsAdapter(val context: Context) : RecyclerView.Adapter<FriendsAdapter
                 .into(holder.profileImage)
         }
 
-        if (friend.userToken!!.isEmpty()) {
-            holder.onlineStatus.text = "Not active"
-            holder.onlineStatus.setTextColor(context.resources.getColor(R.color.red))
-        } else {
-            holder.onlineStatus.text = "Active"
-            holder.onlineStatus.setTextColor(context.resources.getColor(R.color.green))
-        }
-
         holder.item.setOnClickListener {
-            context.startActivity(Intent(context, ProfileActivity::class.java)
-                .putExtra(USER_ID, friendList.get(holder.adapterPosition).uid))
+            val mIntent = Intent(context, ProfileActivity::class.java)
+                .putExtra(USER_ID, friendList.get(holder.adapterPosition).uid)
+            context.startActivity(mIntent)
         }
     }
 

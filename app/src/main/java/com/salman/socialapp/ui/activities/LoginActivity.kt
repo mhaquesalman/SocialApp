@@ -17,8 +17,11 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.database.DatabaseReference
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.iid.FirebaseInstanceId
 import com.salman.socialapp.R
+import com.salman.socialapp.model.FirebaseUserInfo
 import com.salman.socialapp.model.UserInfo
 import com.salman.socialapp.util.Utils
 import com.salman.socialapp.viewmodels.LoginViewModel
@@ -111,6 +114,7 @@ class LoginActivity : AppCompatActivity() {
                             if (authResponse.auth != null) {
                                 updateUI(user)
                                 saveUserInSharedPref(userInfo)
+                                saveUserInFirebase(userInfo)
                             } else {
                                 FirebaseAuth.getInstance().signOut()
                                 googleSignInClient.signOut()
@@ -125,6 +129,30 @@ class LoginActivity : AppCompatActivity() {
                     updateUI(null)
                 }
             }
+    }
+
+    private fun saveUserInFirebase(userInfo: UserInfo) {
+        val userRef: DatabaseReference = FirebaseDatabase.getInstance()
+            .getReference("fusers")
+            .child(userInfo.uid!!)
+
+/*        // FirebaseUserInfo
+        val firebaseUserInfo1 = FirebaseUserInfo(userInfo.uid, userInfo.userToken!!, "offline")
+        val firebaseUserInfo: FirebaseUserInfo = FirebaseUserInfo()
+        firebaseUserInfo.id = userInfo.uid
+        firebaseUserInfo.token = userInfo.userToken!!
+        firebaseUserInfo.status = "offline" */
+
+        // HashMap
+        val hashMap: HashMap<String, Any> = HashMap()
+        hashMap["id"] = userInfo.uid
+        hashMap["token"] = userInfo.userToken!!
+        hashMap["status"] = "offline"
+        hashMap["name"] = userInfo.name!!
+        hashMap["image"] = userInfo.profileUrl!!
+
+        // save to firebae database
+        userRef.setValue(hashMap)
     }
 
     private fun saveUserInSharedPref(userInfo: UserInfo) {

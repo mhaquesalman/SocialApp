@@ -16,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.FriendRequestAdapter
 import com.salman.socialapp.adapters.FriendsAdapter
+import com.salman.socialapp.model.Friend
 import com.salman.socialapp.ui.activities.MainActivity
 import com.salman.socialapp.util.Utils
 import com.salman.socialapp.util.hide
@@ -26,14 +27,14 @@ import com.salman.socialapp.viewmodels.ViewModelFactory
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.fragment_friends.*
 
-
+private const val TAG = "FriendsFragment"
 class FriendsFragment : Fragment() {
-    private val TAG = "FriendsFragment"
     lateinit var mContext: Context
     lateinit var mainViewModel: MainViewModel
     lateinit var friendsAdapter: FriendsAdapter
     lateinit var friendRequestAdapter: FriendRequestAdapter
-    var userIdFromSharedPref: String? = null
+    var friendList: MutableList<Friend> = ArrayList()
+    var userId: String? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -50,6 +51,7 @@ class FriendsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        userId = (activity as MainActivity).currentUserId
         initialization()
         loadFriends()
 
@@ -64,9 +66,6 @@ class FriendsFragment : Fragment() {
         friend_reqRV.layoutManager = LinearLayoutManager(mContext)
         friend_reqRV.adapter = friendRequestAdapter
 
-/*        Log.d(TAG, "userid-01: " + userIdFromSharedPref!!)
-        Log.d(TAG, "userid-02: " + currentUserId!!)
-        Log.d(TAG, "useridFirebase: " + FirebaseAuth.getInstance().uid!!) */
     }
 
     private fun loadFriends() {
@@ -76,7 +75,9 @@ class FriendsFragment : Fragment() {
 //            progressbar.hide()
             (activity as MainActivity).hideProgressBar()
             if (friendResponse.status == 200) {
-                friendsAdapter.updateList(friendResponse.result!!.friends)
+                friendList.clear()
+                friendList.addAll(friendResponse.result!!.friends)
+                friendsAdapter.updateList(friendList)
                 friendRequestAdapter.updateList(friendResponse.result.requests)
                 if (friendResponse.result.friends.size > 0) {
                     friend_title.visibility = View.VISIBLE

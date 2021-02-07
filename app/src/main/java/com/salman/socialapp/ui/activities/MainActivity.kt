@@ -1,14 +1,24 @@
 package com.salman.socialapp.ui.activities
 
 import android.content.Intent
+import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.text.Html
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.TypefaceSpan
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.database.DatabaseReference
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.FriendRequestAdapter
 import com.salman.socialapp.adapters.PostAdapter
@@ -35,10 +45,20 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
     val notificationFragment = NotificationFragment.getInstance()
     var currentUserId: String? = ""
     var userImage: String? = ""
+    var firebaseUser: FirebaseUser? = null
+    var reference: DatabaseReference? = null
 
+    @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        setSupportActionBar(toolbar)
+/*        val typefaceSpan = TypefaceSpan(resources.getFont(R.font.aclonica))
+        val title = SpannableString("SocialApp")
+        title.setSpan(typefaceSpan, 0, title.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        supportActionBar?.setTitle(title)*/
+//        supportActionBar?.setTitle(Html.fromHtml("<font color='#FFFFFF'>SocialApp</font>"))
 
         if (intent.extras != null) {
             if (intent.extras!!.containsKey("isFromNotification"))
@@ -68,6 +88,21 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
 
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.app_bar_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.message_menu -> {
+                val mIntent = Intent(this, MessageActivity::class.java)
+                startActivity(mIntent)
+            }
+        }
+        return true
+    }
+
     private fun getUserFromSharedPref() {
         Utils(this).apply {
             val userInfo = getUserFromSharedPref()
@@ -75,6 +110,9 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
             if (userInfo != null) {
                 currentUserId = userInfo.uid
                 userImage = userInfo.profileUrl
+            } else {
+                firebaseUser = FirebaseAuth.getInstance().currentUser
+                currentUserId = firebaseUser?.uid
             }
         }
     }
