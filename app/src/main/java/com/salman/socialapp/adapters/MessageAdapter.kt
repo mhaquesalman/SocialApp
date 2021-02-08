@@ -12,6 +12,7 @@ import com.bumptech.glide.Glide
 import com.salman.socialapp.R
 import com.salman.socialapp.model.Chat
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.util.Converter
 import de.hdodenhof.circleimageview.CircleImageView
 
 class MessageAdapter(
@@ -21,18 +22,16 @@ class MessageAdapter(
     val userImage: String
 ) : RecyclerView.Adapter<MessageAdapter.MessageViewHolder>() {
 
-    private var isImage: Boolean = false
-
     companion object {
         const val MSG_TYPE_RIGHT = 0
         const val MSG_TYPE_LEFT = 1
     }
 
     override fun getItemViewType(position: Int): Int {
-        return if (chatList[position].sender.equals(currentUserId)) {
-            MSG_TYPE_RIGHT
+        if (chatList[position].sender.equals(currentUserId)) {
+            return MSG_TYPE_RIGHT
         } else {
-            MSG_TYPE_LEFT
+            return MSG_TYPE_LEFT
         }
     }
 
@@ -49,14 +48,14 @@ class MessageAdapter(
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
        val chat = chatList[position]
 
-        if (!isImage) {
-            holder.messageImage.visibility = View.GONE
-            holder.messageText.visibility = View.VISIBLE
-            holder.messageText.text = chat.message
-
+        if (chat.image) {
+            holder.hideTextMsg()
+            holder.showImageMsg()
+            holder.messageImage.setImageBitmap(Converter.StringBase64ToBitmap(chat.message!!))
         } else {
-            holder.messageText.visibility = View.GONE
-            holder.messageImage.visibility = View.VISIBLE
+            holder.hideImageMsg()
+            holder.showTextMsg()
+            holder.messageText.text = chat.message
         }
 
         val profileImage = if (Uri.parse(userImage).authority == null && !userImage.isEmpty()) {
@@ -68,13 +67,26 @@ class MessageAdapter(
 
 
         if (position == (chatList.size - 1)) {
-            if (chat.seen) {
-                holder.seenStatus.text = "Seen"
+            if (chat.image) {
+                if (chat.seen && chatList[position].sender.equals(currentUserId)) {
+                    holder.seenImgStatus.text = "Seen"
+                } else if (chatList[position].sender.equals(currentUserId)) {
+                    holder.seenImgStatus.text = "Delivered"
+                } else {
+                    holder.seenImgStatus.visibility = View.GONE
+                }
             } else {
-                holder.seenStatus.text = "Delivered"
+                if (chat.seen && chatList[position].sender.equals(currentUserId)) {
+                    holder.seenStatus.text = "Seen"
+                } else if (chatList[position].sender.equals(currentUserId)) {
+                    holder.seenStatus.text = "Delivered"
+                } else {
+                    holder.seenStatus.visibility = View.GONE
+                }
             }
         } else {
             holder.seenStatus.visibility = View.GONE
+            holder.seenImgStatus.visibility = View.GONE
         }
 
     }
@@ -87,8 +99,13 @@ class MessageAdapter(
         return chatList[position]
     }
 
+    private fun imageStringToUri(message: String?): Uri? {
+        val imageUri = Uri.parse(message)
+        return imageUri
+    }
+
     fun isImageSent(img: Boolean) {
-        isImage = img
+
     }
 
     inner class MessageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -97,5 +114,25 @@ class MessageAdapter(
         val seenStatus: TextView = itemView.findViewById(R.id.seen_status)
         val messageImage: ImageView = itemView.findViewById(R.id.chat_img)
         val seenImgStatus: TextView = itemView.findViewById(R.id.seen_img_status)
+
+        fun showTextMsg() {
+            messageText.visibility = View.VISIBLE
+            seenStatus.visibility = View.VISIBLE
+        }
+
+        fun showImageMsg() {
+            messageImage.visibility = View.VISIBLE
+            seenImgStatus.visibility = View.VISIBLE
+        }
+
+        fun hideTextMsg() {
+            messageText.visibility = View.GONE
+            seenStatus.visibility = View.GONE
+        }
+
+        fun hideImageMsg() {
+            messageImage.visibility = View.GONE
+            seenImgStatus.visibility = View.GONE
+        }
     }
 }

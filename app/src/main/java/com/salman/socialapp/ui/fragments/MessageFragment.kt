@@ -63,9 +63,8 @@ class MessageFragment : Fragment() {
     }
     private fun initialization() {
         mainViewModel = ViewModelProvider(mContext as FragmentActivity, ViewModelFactory()).get(MainViewModel::class.java)
+        messageRV.setHasFixedSize(true)
         messageRV.layoutManager = LinearLayoutManager(mContext)
-        firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
-        messageRV.adapter = firebaseUserInfoAdapter
     }
 
     private fun loadFriends() {
@@ -89,12 +88,12 @@ class MessageFragment : Fragment() {
     }
 
     private fun loadFriendsFromFirebase(friends: List<Friend>) {
+        (activity as MessageActivity).hideProgressBar()
         val dataRef = FirebaseDatabase.getInstance().getReference("fusers")
 
         dataRef.addValueEventListener(object : ValueEventListener {
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                (activity as MessageActivity).hideProgressBar()
                 friendList.clear()
                 for (snapshot in dataSnapshot.children) {
                     val firebaseUserInfo = snapshot.getValue(FirebaseUserInfo::class.java)
@@ -104,7 +103,9 @@ class MessageFragment : Fragment() {
                         }
                     }
                 }
-                firebaseUserInfoAdapter.notifyDataSetChanged()
+                firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
+                messageRV.adapter = firebaseUserInfoAdapter
+
                 if (friends.size == 0)
                     defaultTV.visibility = View.VISIBLE
                 else

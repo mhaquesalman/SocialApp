@@ -36,8 +36,10 @@ import kotlinx.android.synthetic.main.item_post.view.*
 
 private const val TAG = "PostAdapter"
 class PostAdapter(
-    val context: Context, val postItems: MutableList<Post>,
-    val userId: String = "", val isPostEditable: Boolean = false
+    val context: Context,
+    val postItems: MutableList<Post>,
+    val userId: String = "",
+    val isPostEditable: Boolean = false
 ) : RecyclerView.Adapter<PostAdapter.PostViewHolder>() {
 
     var totalReaction = 0
@@ -54,7 +56,6 @@ class PostAdapter(
     }
 
     fun setOnPostMoreAction(iPostMoreAction: IPostMoreAction) {
-        Log.d(TAG, "setOnPostMoreAction: called")
         this.iPostMoreAction = iPostMoreAction
         Log.d(TAG, "iPostMoreAction: ${this.iPostMoreAction}")
     }

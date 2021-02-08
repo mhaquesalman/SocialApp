@@ -1,7 +1,18 @@
 package com.salman.socialapp.ui.activities
 
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
+import android.util.Log
+import android.view.View
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -15,9 +26,14 @@ import com.salman.socialapp.R
 import com.salman.socialapp.adapters.MessageAdapter
 import com.salman.socialapp.model.Chat
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.util.Converter
 import com.salman.socialapp.util.showToast
+import com.theartofdev.edmodo.cropper.CropImage
+import com.theartofdev.edmodo.cropper.CropImageView
 import kotlinx.android.synthetic.main.activity_send_message.*
+import java.io.InputStream
 
+private const val TAG = "SendMessageActivity"
 class SendMessageActivity : AppCompatActivity() {
     var currentUserId: String? = ""
     var userId: String? = ""
@@ -28,6 +44,8 @@ class SendMessageActivity : AppCompatActivity() {
     var reference: DatabaseReference? = null
     var seenEventListener: ValueEventListener? = null
     lateinit var messageAdapter: MessageAdapter
+    var uri: Uri? = null
+    var imageSent = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,14 +75,25 @@ class SendMessageActivity : AppCompatActivity() {
 
         onSendBtnClicked()
 
+        onImageButtonClicked()
+
         ItemTouchHelper(callback).attachToRecyclerView(recycler_view)
 
+        text_send.addTextChangedListener(msgTextWatcher)
+
+    }
+
+    private fun onImageButtonClicked() {
+        img_send.setOnClickListener {
+            CropImage.startPickImageActivity(this)
+        }
     }
 
     private fun onSendBtnClicked() {
         btn_send.setOnClickListener {
             val message = text_send.text.toString()
             if (!message.isEmpty()) {
+                imageSent = false
                 sendMessage(currentUserId, userId, message)
                 text_send.setText("")
             } else {
@@ -98,13 +127,14 @@ class SendMessageActivity : AppCompatActivity() {
         // recyclerview
         val linearLayoutManager = LinearLayoutManager(this)
         linearLayoutManager.stackFromEnd = true
+        recycler_view.setHasFixedSize(true)
         recycler_view.layoutManager = linearLayoutManager
     }
 
     private fun sendMessage(sender: String?, receiver: String?, message: String) {
         val chatRef = FirebaseDatabase.getInstance().getReference("chats")
         val id = chatRef.push().key
-        val chat = Chat(id, sender, receiver, message,false)
+        val chat = Chat(id, sender, receiver, message, imageSent, false)
         chatRef.child(id!!).setValue(chat)
 
         // adding users to chat fragment, recent chats with friends
@@ -145,9 +175,9 @@ class SendMessageActivity : AppCompatActivity() {
                 }
                 messageAdapter = MessageAdapter(this@SendMessageActivity, chatList, currentUserId!!, profileUrl!!)
                 recycler_view.adapter = messageAdapter
+                recycler_view.scrollToPosition(chatList.size - 1)
 //                messageAdapter.notifyDataSetChanged()
 //                messageAdapter.notifyItemInserted(chatList.size - 1)
-//                recycler_view.smoothScrollToPosition(chatList.size - 1)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -196,6 +226,53 @@ class SendMessageActivity : AppCompatActivity() {
         ref.child(mChat.id!!).removeValue()
     }
 
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == CropImage.PICK_IMAGE_CHOOSER_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            val imageUri = CropImage.getPickImageResultUri(this, data)
+            if (CropImage.isReadExternalStoragePermissionsRequired(this, imageUri)) {
+                uri = imageUri
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    requestPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE), 0)
+                }
+            } else {
+                startCropImage(imageUri)
+            }
+        } else if (resultCode == Activity.RESULT_CANCELED) {
+            showToast("Something wrong !")
+        }
+
+        if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE) {
+            val result: CropImage.ActivityResult = CropImage.getActivityResult(data)
+            if (resultCode == Activity.RESULT_OK) {
+                sendImageMessage(result.uri)
+            } else if (resultCode == Activity.RESULT_CANCELED) {
+                showToast("Something wrong !")
+            }
+        }
+    }
+
+    private fun sendImageMessage(uri: Uri?) {
+        if (uri != null) {
+            val inputStream: InputStream? = contentResolver.openInputStream(uri)
+            val image: Bitmap = BitmapFactory.decodeStream(inputStream)
+            val message = Converter.BtimapToStringBase64(image)
+            Log.d(TAG, "ImageMessage: " + message)
+            Log.d(TAG, "ImageMessageLength: " + message.length)
+
+            imageSent = true
+            sendMessage(currentUserId, userId, message)
+        }
+    }
+
+    private fun startCropImage(imageUri: Uri?) {
+        CropImage.activity(imageUri)
+            .setGuidelines(CropImageView.Guidelines.ON)
+            .setMultiTouchEnabled(true)
+            .start(this)
+    }
+
     override fun onResume() {
         super.onResume()
         checkStatus("online")
@@ -227,5 +304,24 @@ class SendMessageActivity : AppCompatActivity() {
         }
     }
 
+    private val msgTextWatcher: TextWatcher = object : TextWatcher {
+
+        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+        }
+
+        override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
+            val msgText = text_send.text.toString().trim()
+            if (msgText.length >= 1) {
+                img_send.visibility = View.INVISIBLE
+                btn_send.visibility = View.VISIBLE
+            } else {
+                btn_send.visibility = View.INVISIBLE
+                img_send.visibility = View.VISIBLE
+            }
+        }
+
+        override fun afterTextChanged(p0: Editable?) {
+        }
+    }
 
 }

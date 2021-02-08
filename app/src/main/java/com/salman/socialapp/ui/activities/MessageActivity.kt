@@ -1,13 +1,17 @@
 package com.salman.socialapp.ui.activities
 
+import android.graphics.Color
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.TypefaceSpan
 import android.view.View
-import androidx.annotation.RequiresApi
+import android.widget.RelativeLayout
+import android.widget.TextView
+import androidx.appcompat.app.ActionBar
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.fragment.app.FragmentPagerAdapter
@@ -17,15 +21,29 @@ import com.salman.socialapp.ui.fragments.RecentFragment
 import kotlinx.android.synthetic.main.activity_message.*
 
 class MessageActivity : AppCompatActivity() {
-    @RequiresApi(Build.VERSION_CODES.P)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_message)
 
-        val typefaceSpan = TypefaceSpan(resources.getFont(R.font.aclonica))
-        val title = SpannableString("SocialApp")
-        title.setSpan(typefaceSpan, 0, title.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        supportActionBar?.setTitle(title)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            val typefaceSpan = TypefaceSpan(resources.getFont(R.font.aclonica))
+            val title = SpannableString("SocialApp")
+            title.setSpan(typefaceSpan, 0, title.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            supportActionBar?.setTitle(title)
+        } else {
+            val actionBar = supportActionBar
+            val tv = TextView(applicationContext)
+            val typeface =  ResourcesCompat.getFont(this, R.font.aclonica)
+            val lp = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
+            tv.layoutParams = lp
+            tv.setText("SocialApp")
+            tv.setTextSize(22f)
+            tv.setTextColor(Color.WHITE)
+            tv.setTypeface(typeface)
+            actionBar?.setDisplayOptions(ActionBar.DISPLAY_SHOW_CUSTOM)
+            actionBar?.setCustomView(tv)
+
+        }
 //        supportActionBar?.setTitle("Messages")
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 

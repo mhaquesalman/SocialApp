@@ -48,7 +48,6 @@
         android:layout_marginTop="2dp"
         app:layout_constraintBottom_toTopOf="@+id/bottom"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/toolbar">
 
@@ -84,7 +83,7 @@
             android:layout_height="40dp"
             android:layout_alignParentEnd="true"
             android:background="@drawable/ic_send_msg"
-            android:visibility="visible"/>
+            android:visibility="invisible"/>
 
         <ImageView
             android:layout_width="45dp"
@@ -94,7 +93,7 @@
             android:src="@drawable/ic_photo"
             app:tint="@color/colorPrimaryDark"
             android:alpha="0.7"
-            android:visibility="invisible"/>
+            android:visibility="visible"/>
 
     </RelativeLayout>
 

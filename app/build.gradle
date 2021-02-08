@@ -89,6 +89,9 @@ dependencies {
     // Circular imageview
     implementation 'de.hdodenhof:circleimageview:3.1.0'
 
+    //Image cropper
+    implementation 'com.theartofdev.edmodo:android-image-cropper:2.8.0'
+
     // Reaction design library
     implementation project (':reactbutton')
 

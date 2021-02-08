@@ -23,9 +23,13 @@ import com.salman.socialapp.util.IOnCommentRepliesAdded
 import kotlinx.android.synthetic.main.item_comment.view.*
 import java.text.ParseException
 
-class CommentAdapter(val context: Context, val commentItems: MutableList<Comment>,
-val iOnCommentRepliesAdded: IOnCommentRepliesAdded, val postAdapterPosition: Int, val userId: String) :
-    RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
+class CommentAdapter(
+    val context: Context,
+    val commentItems: MutableList<Comment>,
+    val iOnCommentRepliesAdded: IOnCommentRepliesAdded,
+    val postAdapterPosition: Int,
+    val userId: String
+) : RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommentViewHolder {
         val view = LayoutInflater.from(context).inflate(R.layout.item_comment, parent, false)
