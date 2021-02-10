@@ -151,6 +151,15 @@ if($errorData[1]){
     return checkError($response, $errorData);
 }
 
+$query = $pdo->prepare("DELETE FROM `notifications` WHERE postId = :postId ");
+$query->bindParam(':postId', $postId, PDO::PARAM_INT);
+$query->execute();
+
+$errorData = $query->errorInfo();
+if($errorData[1]){
+    return checkError($response, $errorData);
+}
+
 $output['status']  = 200;
 $output['message'] = "Post Deleted Successfully !";
 

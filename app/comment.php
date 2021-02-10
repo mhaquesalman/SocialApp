@@ -91,6 +91,59 @@ $app->post('/postcomment', function ($request,  $response,  $args) {
 });
 
 
+//delete comment
+$app->get('/deletecomment', function($request, $response, $args) {
+    include_once __DIR__ . '/../bootstrap/dbconnection.php';
+
+    $cid = $request->getQueryParams()['cid'];
+    $postId = $request->getQueryParams()['postId'];
+    $commentOn = $request->getQueryParams()['commentOn'];
+    
+    if($commentOn == 'post') {
+        $query = "DELETE FROM `comments` WHERE `cid` = :cid; "; 
+        $query .= "DELETE FROM `comments` WHERE `parentId` = :cid; ";
+    } else {
+        $query = "DELETE FROM `comments` WHERE `cid` = :cid; "; 
+    }
+
+    $query = $pdo->prepare($query);
+    $query->bindParam(':cid', $cid);
+    $query->execute();
+
+    $errorData = $query->errorInfo();
+    if ($errorData[1]) {
+        return checkError($response, $errorData);
+    }
+
+    $query = $pdo->prepare("SELECT count(cid) as totalCount FROM `comments` WHERE `commentPostId`= :postId");
+
+    $query->bindParam(":postId", $postId);
+    $query->execute();
+    $result = $query->fetchALL(PDO::FETCH_ASSOC);
+    $commentCount = $result[0]['totalCount'];
+
+    $sql = $pdo->prepare("UPDATE `posts` SET `commentCount` = :commentCount WHERE `postId` = :postId");
+    $sql->bindParam(":commentCount", $commentCount);
+    $sql->bindParam(":postId", $postId);
+    $sql->execute();
+
+    if($commentCount == 0) {
+        $stmt = $pdo->prepare("DELETE FROM `notifications` WHERE `postId` = :postId");
+		$stmt->bindParam(':postId', $postId);
+		$stmt->execute(); 
+    }
+
+
+    $output['status']  = 200;
+    $output['message'] = "Comment Deleted Successfully !";
+
+    $payload = json_encode($output);
+    $response->getBody()->write($payload);
+    return $response->withHeader('Content-Type', 'application/json')->withStatus(200);
+    
+
+});
+
 // fetch comments
 $app->get('/getpostcomments', function ($request,  $response,  $args) {
     include_once __DIR__ . '/../bootstrap/dbconnection.php';
