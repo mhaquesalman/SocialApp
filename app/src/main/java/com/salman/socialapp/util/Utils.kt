@@ -1,6 +1,8 @@
 package com.salman.socialapp.util
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
@@ -41,15 +43,32 @@ class Utils(val context: Context) {
         editor.commit()
     }
 
+/*    fun isNetWorkAvailable(): Boolean {
+        var result = false
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        connectivityManager?.let {
+            it.getNetworkCapabilities(it.activeNetwork)?.apply {
+                result = when {
+                    hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                    hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                    else -> false
+                }
+            }
+        }
+        return result
+    }*/
+
     companion object {
+
         fun formatDate(date: String?): String {
-/*            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+/*         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val localDateTime = LocalDateTime.parse(date)
                 val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.LONG, FormatStyle.SHORT)
                 val output = localDateTime.format(formatter)
                 Log.d(TAG, "LocalDateTime: $output")
                 return output
             }*/
+
             val inputFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss")
             val outputFormat = SimpleDateFormat("dd MMM yyyy hh:mm a")
             val parsedDate = inputFormat.parse(date)
@@ -57,6 +76,26 @@ class Utils(val context: Context) {
             Log.d(TAG, "SimpleDateFormat: $output")
             return output
         }
+
+        fun isNetworkAvailable(context: Context): Boolean {
+            var result = false
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+                if (capabilities != null) {
+                    result = when {
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                        else -> false
+                    }
+                }
+            } else {
+                val activeNetworkInfo = connectivityManager.activeNetworkInfo
+                result = activeNetworkInfo != null && activeNetworkInfo.isConnected
+            }
+            return result
+        }
+
     }
 
 }

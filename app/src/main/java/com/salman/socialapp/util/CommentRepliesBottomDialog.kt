@@ -30,12 +30,15 @@ import kotlinx.android.synthetic.main.bottom_dialog_comment.*
 import kotlinx.android.synthetic.main.bottom_dialog_comment.view.*
 
 private const val TAG = "CommentsBottomDialog"
-class CommentRepliesBottomDialog(val iOnCommentRepliesAdded: IOnCommentRepliesAdded) : BottomSheetDialogFragment() {
+class CommentRepliesBottomDialog(
+    val iOnCommentRepliesAdded: IOnCommentRepliesAdded
+) : BottomSheetDialogFragment(), IOnCommentDelete {
     lateinit var commentCountTV: TextView
     lateinit var commentRecView: RecyclerView
     lateinit var commentET: EditText
     lateinit var commentSendBtn: RelativeLayout
     lateinit var backPressBtn: ImageView
+    lateinit var progressBar: ProgressBar
     lateinit var bottomSheetBehavior: BottomSheetBehavior<FrameLayout>
     var bottomSheet: FrameLayout? = null
 
@@ -87,6 +90,7 @@ class CommentRepliesBottomDialog(val iOnCommentRepliesAdded: IOnCommentRepliesAd
             postAdapterPosition = getInt("postAdapterPosition")
             adapterPosition = getInt("adapterPosition")
         }
+
     }
 
     @SuppressLint("RestrictedApi")
@@ -100,6 +104,7 @@ class CommentRepliesBottomDialog(val iOnCommentRepliesAdded: IOnCommentRepliesAd
         commentET = view.comment_txt
         commentSendBtn = view.comment_send
         backPressBtn = view.backBtn
+        progressBar = view.progress_bar
 
         if (openKeyboard) {
             commentET.requestFocus()
@@ -195,16 +200,55 @@ class CommentRepliesBottomDialog(val iOnCommentRepliesAdded: IOnCommentRepliesAd
     }
 
     private fun getCommentReplies() {
+        progressBar.show()
         commentViewModel.getCommentReplies(postId!!, parentId!!)?.observe(this, Observer { commentResponse ->
+            progressBar.hide()
             if (commentResponse.status == 200) {
                 commentItems.clear()
                 commentItems.addAll(commentResponse.comments)
                 commentAdapter = CommentAdapter(mContext, commentItems, iOnCommentRepliesAdded, postAdapterPosition, userId!!)
                 commentRecView.adapter = commentAdapter
+                commentAdapter?.setIOnCommentDelete(this)
             } else {
                 mContext.showToast(commentResponse.message)
             }
         })
+    }
+
+    override fun onCommentDelete(position: Int, cid: String?, postId: String?, commentOn: String?) {
+//        progressBar.show()
+        Log.d(TAG, "Comment-sub: $position / $cid / $postId / $commentOn")
+        val hashMap: HashMap<String, String> = HashMap()
+        hashMap.put("cid", cid!!)
+        hashMap.put("postId", postId!!)
+        hashMap.put("commentOn", commentOn!!)
+
+        commentViewModel.deleteComment(hashMap)?.observe(this, Observer { generalResponse ->
+//            progressBar.hide()
+            mContext.showToast(generalResponse.message, Toast.LENGTH_SHORT)
+            if (generalResponse.status == 200) {
+                getCommentReplies()
+                // update comment recyclerview after removing reply in a comment
+                onCommentRepliesDelete?.onCommentRepliesDelete()
+                // update post recyclerview after removing comment in a post
+                onCommentDeletePostUpdate?.onCommentDeletePostUpdate(postAdapterPosition)
+            }
+        })
+    }
+
+    companion object {
+        private var onCommentDeletePostUpdate: IOnCommentDeletePostUpdate? = null
+        private var onCommentRepliesDelete: IOnCommentRepliesDelete? = null
+        fun setIOnCommentDeletePostUpdate(onCommentDeletePostUpdate: IOnCommentDeletePostUpdate) {
+            this.onCommentDeletePostUpdate = onCommentDeletePostUpdate
+        }
+        fun setIOnCommentRepliesDelete(onCommentRepliesDelete: IOnCommentRepliesDelete) {
+            this.onCommentRepliesDelete = onCommentRepliesDelete
+        }
+    }
+
+    interface IOnCommentRepliesDelete {
+        fun onCommentRepliesDelete()
     }
 
 }

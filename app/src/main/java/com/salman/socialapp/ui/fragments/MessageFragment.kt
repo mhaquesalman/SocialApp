@@ -2,10 +2,11 @@ package com.salman.socialapp.ui.fragments
 
 import android.content.Context
 import android.os.Bundle
+import android.text.TextUtils
 import android.util.Log
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
+import android.view.*
+import androidx.appcompat.widget.SearchView
+import androidx.core.view.MenuItemCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Observer
@@ -18,7 +19,6 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.FirebaseUserInfoAdapter
-import com.salman.socialapp.adapters.FriendsAdapter
 import com.salman.socialapp.model.FirebaseUserInfo
 import com.salman.socialapp.model.Friend
 import com.salman.socialapp.ui.activities.MessageActivity
@@ -33,11 +33,17 @@ class MessageFragment : Fragment() {
     lateinit var mainViewModel: MainViewModel
     lateinit var firebaseUserInfoAdapter: FirebaseUserInfoAdapter
     var friendList: MutableList<FirebaseUserInfo> = ArrayList()
+    var friends: List<Friend> = emptyList()
     var userId: String? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
         mContext = context
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        setHasOptionsMenu(true)
+        super.onCreate(savedInstanceState)
     }
 
     override fun onCreateView(
@@ -61,6 +67,21 @@ class MessageFragment : Fragment() {
 
         loadFriends()
     }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.message_menu, menu)
+
+        // SearchView
+        val item = menu.findItem(R.id.search_menu)
+        val searchView = MenuItemCompat.getActionView(item) as SearchView
+//        val search_view = item.getActionView() as SearchView
+
+        // SearchView Listener
+        searchView.setOnQueryTextListener(onQueryTextListener)
+
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
     private fun initialization() {
         mainViewModel = ViewModelProvider(mContext as FragmentActivity, ViewModelFactory()).get(MainViewModel::class.java)
         messageRV.setHasFixedSize(true)
@@ -73,6 +94,7 @@ class MessageFragment : Fragment() {
             if (friendResponse.status == 200) {
 //                friendList.clear()
                 val friends: List<Friend> = friendResponse.result!!.friends
+                this.friends = friends
 //                friendList.addAll(friends)
                 loadFriendsFromFirebase(friends)
 //                friendsAdapter.updateList(friends)
@@ -81,7 +103,6 @@ class MessageFragment : Fragment() {
 //                else
 //                    defaultTV.visibility = View.GONE
             } else {
-//                Toast.makeText(mContext, friendResponse.message, Toast.LENGTH_LONG).show()
                 mContext.showToast(friendResponse.message)
             }
         })
@@ -92,7 +113,6 @@ class MessageFragment : Fragment() {
         val dataRef = FirebaseDatabase.getInstance().getReference("fusers")
 
         dataRef.addValueEventListener(object : ValueEventListener {
-
             override fun onDataChange(dataSnapshot: DataSnapshot) {
                 friendList.clear()
                 for (snapshot in dataSnapshot.children) {
@@ -106,18 +126,65 @@ class MessageFragment : Fragment() {
                 firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
                 messageRV.adapter = firebaseUserInfoAdapter
 
-                if (friends.size == 0)
-                    defaultTV.visibility = View.VISIBLE
-                else
-                    defaultTV.visibility = View.GONE
+                if (friends.size == 0) defaultTV.visibility = View.VISIBLE
+                else defaultTV.visibility = View.GONE
             }
-
             override fun onCancelled(error: DatabaseError) {
                 mContext.showToast(error.message)
             }
         })
     }
 
+    private fun searchFriendsFromFirebase(query: String) {
+        val searchText = query.toLowerCase()
+        val dataRef = FirebaseDatabase.getInstance().getReference("fusers")
+
+        dataRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(dataSnapshot: DataSnapshot) {
+                friendList.clear()
+                for (snapshot in dataSnapshot.children) {
+                    val firebaseUserInfo = snapshot.getValue(FirebaseUserInfo::class.java)
+                    for (friend in friends) {
+                        if (firebaseUserInfo!!.id.equals(friend.uid)) {
+                            if (firebaseUserInfo.name.toLowerCase().contains(searchText)) {
+                                friendList.add(firebaseUserInfo)
+                            }
+                        }
+                    }
+                }
+                firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
+                // refresh adapter after searching
+//                firebaseUserInfoAdapter.notifyDataSetChanged()
+                messageRV.adapter = firebaseUserInfoAdapter
+
+                if (friends.size == 0) defaultTV.visibility = View.VISIBLE
+                else defaultTV.visibility = View.GONE
+            }
+            override fun onCancelled(error: DatabaseError) {
+                mContext.showToast(error.message)
+            }
+        })
+    }
+
+    private val onQueryTextListener: SearchView.OnQueryTextListener = object : SearchView.OnQueryTextListener {
+        override fun onQueryTextSubmit(s: String?): Boolean {
+            if (!TextUtils.isEmpty(s!!.trim())) {
+                searchFriendsFromFirebase(s)
+            } else {
+                loadFriendsFromFirebase(friends)
+            }
+            return false
+        }
+
+        override fun onQueryTextChange(s: String?): Boolean {
+            if (!TextUtils.isEmpty(s!!.trim())) {
+                searchFriendsFromFirebase(s)
+            } else {
+                loadFriendsFromFirebase(friends)
+            }
+            return false
+        }
+    }
 
     companion object {
         fun getInstance()= MessageFragment()

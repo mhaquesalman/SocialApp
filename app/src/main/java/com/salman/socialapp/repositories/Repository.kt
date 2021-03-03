@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.google.gson.Gson
+import com.salman.socialapp.local.repository.LocalRepository
 import com.salman.socialapp.model.*
 import com.salman.socialapp.network.ApiError
 import com.salman.socialapp.network.ApiService
@@ -12,7 +13,6 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
-
 
 const val TAG = "Repository"
 class Repository(val apiService: ApiService?) {
@@ -375,6 +375,34 @@ class Repository(val apiService: ApiService?) {
             }
         })
         return postCommentLiveData
+    }
+
+    fun deleteComment(params: Map<String, String>): LiveData<GeneralResponse> {
+        val deleteCommentLiveData: MutableLiveData<GeneralResponse> = MutableLiveData()
+        val call = apiService?.deleteComment(params)
+        call?.enqueue(object : Callback<GeneralResponse> {
+            override fun onResponse(call: Call<GeneralResponse>, response: Response<GeneralResponse>) {
+                if (response.isSuccessful) {
+                    deleteCommentLiveData.postValue(response.body())
+                } else {
+                    val gson = Gson()
+                    val deleteCommentResponse = try {
+                        Log.e(TAG, "ResponseError: " + response.errorBody())
+                        gson.fromJson(response.errorBody()?.string(), GeneralResponse::class.java)
+                    } catch (e: IOException) {
+                        val errorMessage = ApiError.getErrorFromException(e)
+                        GeneralResponse(message = errorMessage.message, status = errorMessage.status)
+                    }
+                    deleteCommentLiveData.postValue(deleteCommentResponse)
+                }
+            }
+            override fun onFailure(call: Call<GeneralResponse>, t: Throwable) {
+                val errorMessage = ApiError.getErrorFromThrowable(t)
+                val generalResponse = GeneralResponse(message = errorMessage.message, status = errorMessage.status)
+                deleteCommentLiveData.postValue(generalResponse)
+            }
+        })
+        return deleteCommentLiveData
     }
 
     fun getPostComments(postId: String, postUserId: String): LiveData<CommentResponse> {

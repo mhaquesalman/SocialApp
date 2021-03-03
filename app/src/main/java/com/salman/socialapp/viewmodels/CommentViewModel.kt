@@ -14,4 +14,6 @@ class CommentViewModel(val repository: Repository?) : ViewModel() {
     fun getCommentReplies(postId: String, commentId: String) =
         repository?.getCommentReplies(postId, commentId)
 
+    fun deleteComment(params: Map<String, String>) = repository?.deleteComment(params)
+
 }

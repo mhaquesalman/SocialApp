@@ -44,7 +44,8 @@
         android:id="@+id/chat_img"
         android:layout_toEndOf="@id/profile_image"
         android:src="@drawable/cover_picture_placeholder"
-        android:scaleType="centerCrop"
+        android:background="@android:color/background_dark"
+        android:scaleType="fitCenter"
         android:visibility="gone"/>
 
     <TextView

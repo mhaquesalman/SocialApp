@@ -2,7 +2,6 @@ package com.salman.socialapp.adapters
 
 import android.content.Context
 import android.net.Uri
-import android.opengl.Visibility
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,26 +9,24 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.salman.socialapp.R
 import com.salman.socialapp.model.Comment
 import com.salman.socialapp.network.BASE_URL
-import com.salman.socialapp.util.AgoDateParser
-import com.salman.socialapp.util.CommentRepliesBottomDialog
-import com.salman.socialapp.util.CommentsBottomDialog
-import com.salman.socialapp.util.IOnCommentRepliesAdded
+import com.salman.socialapp.util.*
 import kotlinx.android.synthetic.main.item_comment.view.*
-import java.text.ParseException
 
 class CommentAdapter(
     val context: Context,
     val commentItems: MutableList<Comment>,
     val iOnCommentRepliesAdded: IOnCommentRepliesAdded,
     val postAdapterPosition: Int,
-    val userId: String
-) : RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
+    val userId: String) : RecyclerView.Adapter<CommentAdapter.CommentViewHolder>() {
+
+    var onCommentDelete: IOnCommentDelete? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CommentViewHolder {
         val view = LayoutInflater.from(context).inflate(R.layout.item_comment, parent, false)
@@ -109,10 +106,49 @@ class CommentAdapter(
             holder.subCommentSection.visibility = View.GONE
         }
 
+        holder.item.setOnLongClickListener {
+            showAlertDialog(
+                position,
+                comment.cid,
+                comment.commentPostId,
+                comment.commentOn
+            )
+            return@setOnLongClickListener true
+        }
     }
 
     override fun getItemCount(): Int {
         return commentItems.size
+    }
+
+    fun setIOnCommentDelete(iOnCommentDelete: IOnCommentDelete) {
+        this.onCommentDelete = iOnCommentDelete
+    }
+
+    private fun showAlertDialog(
+        position: Int,
+        cid: String?,
+        commentPostId: String?,
+        commentOn: String?
+    ) {
+        val builder: AlertDialog.Builder = AlertDialog.Builder(context)
+        builder.setTitle("Confirm delete ?")
+        builder.setMessage("Press ok to delete or click cancel")
+        builder.setCancelable(false)
+        builder.setPositiveButton(android.R.string.yes) { dialog, which ->
+            onCommentDelete?.onCommentDelete(
+                position,
+                cid,
+                commentPostId,
+                commentOn
+            )
+        }
+        builder.setNegativeButton(android.R.string.no) { dialog, which ->
+
+        }
+//        builder.show()
+        val alertDialog: AlertDialog = builder.create()
+        alertDialog.show()
     }
 
     private fun openCommentReplyBottomDialog(
@@ -140,6 +176,9 @@ class CommentAdapter(
     }
 
     inner class CommentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val item: View = itemView
+
+        // main comment section
         val commentProfileImage: ImageView = itemView.comment_profile_image
         val commentProfileName: TextView = itemView.comment_profile_name
         val commentBody: TextView = itemView.comment_body
@@ -155,4 +194,5 @@ class CommentAdapter(
         val subCommentDate: TextView = itemView.subComment_date
 
     }
+
 }

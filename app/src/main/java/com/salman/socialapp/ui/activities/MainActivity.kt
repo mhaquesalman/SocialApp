@@ -26,19 +26,18 @@ import com.salman.socialapp.model.PerformAction
 import com.salman.socialapp.ui.fragments.FriendsFragment
 import com.salman.socialapp.ui.fragments.NewsFeedFragment
 import com.salman.socialapp.ui.fragments.NotificationFragment
-import com.salman.socialapp.util.CommentsBottomDialog
-import com.salman.socialapp.util.IOnCommentAdded
-import com.salman.socialapp.util.Utils
-import com.salman.socialapp.util.showToast
+import com.salman.socialapp.util.*
 import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import kotlinx.android.synthetic.main.activity_main.*
 
 private const val TAG = "MainActivity"
 const val USER_ID = "uid"
-class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAction,
-    PostAdapter.IUpdateUserReaction, IOnCommentAdded {
-
+class MainActivity : AppCompatActivity(),
+    FriendRequestAdapter.OnClickPerformAction,
+    PostAdapter.IUpdateUserReaction,
+    IOnCommentAdded,
+    IOnCommentDeletePostUpdate{
     lateinit var mainViewModel: MainViewModel
     val newsFeedFragment = NewsFeedFragment.getInstance()
     val friendsFragment = FriendsFragment.getInstance()
@@ -54,15 +53,13 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
         setContentView(R.layout.activity_main)
 
         setSupportActionBar(toolbar)
-/*        val typefaceSpan = TypefaceSpan(resources.getFont(R.font.aclonica))
-        val title = SpannableString("SocialApp")
-        title.setSpan(typefaceSpan, 0, title.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        supportActionBar?.setTitle(title)*/
 //        supportActionBar?.setTitle(Html.fromHtml("<font color='#FFFFFF'>SocialApp</font>"))
 
-        if (intent.extras != null) {
-            if (intent.extras!!.containsKey("isFromNotification"))
+        val bundle = intent.extras
+        if (bundle != null) {
+            if (bundle.containsKey("isFromNotification")) {
                 setFragment(notificationFragment)
+            }
             bottomNavigation.menu.findItem(R.id.notificationFragment).setChecked(true)
         } else {
             setFragment(newsFeedFragment)
@@ -75,6 +72,9 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
         getUserFromSharedPref()
 
         mainViewModel = ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java)
+
+        CommentsBottomDialog.setIOnCommentDeletePostUpdate(this)
+        CommentRepliesBottomDialog.setIOnCommentDeletePostUpdate(this)
 
         fab.setOnClickListener {
             startActivity(Intent(this, PostUploadActivity::class.java)
@@ -188,6 +188,10 @@ class MainActivity : AppCompatActivity(), FriendRequestAdapter.OnClickPerformAct
 
     override fun onCommentAdded(position: Int) {
         newsFeedFragment.onCommentAdded(position)
+    }
+
+    override fun onCommentDeletePostUpdate(position: Int) {
+        newsFeedFragment.onCommentDelete(position)
     }
 
 }

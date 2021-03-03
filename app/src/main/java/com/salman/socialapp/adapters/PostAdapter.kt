@@ -15,6 +15,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.widget.PopupMenu
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
@@ -30,6 +31,7 @@ import com.salman.socialapp.network.BASE_URL
 import com.salman.socialapp.ui.activities.PostDetailActivity
 import com.salman.socialapp.util.CommentsBottomDialog
 import com.salman.socialapp.util.Utils
+import com.salman.socialapp.util.showToast
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.click_post_bottom_sheet.view.*
 import kotlinx.android.synthetic.main.item_post.view.*
@@ -110,6 +112,7 @@ class PostAdapter(
         if (!userImage!!.isEmpty()) {
             Glide.with(context)
                 .load(userImage)
+                .error(R.drawable.try_later)
                 .into(holder.peopleImage)
         }
 
@@ -196,9 +199,16 @@ class PostAdapter(
         return postItems.size
     }
 
-    fun updateCommentCount(position: Int) {
+    fun increaseCommentCount(position: Int) {
         postItems.get(position).apply {
             commentCount += 1
+            notifyItemChanged(position, this)
+        }
+    }
+
+    fun decreaseCommentCount(position: Int) {
+        postItems.get(position).apply {
+            commentCount -= 1
             notifyItemChanged(position, this)
         }
     }
@@ -241,14 +251,22 @@ class PostAdapter(
             reactionButton.setReactClickListener(object : View.OnClickListener {
                 override fun onClick(v: View?) {
                     Log.d(TAG, "setReactClickListener called")
-                    onReactionChanged(v)
+                    if (Utils.isNetworkAvailable(context)) {
+                        onReactionChanged(v)
+                    } else {
+                        context.showToast("No Internet Connection !", Toast.LENGTH_SHORT)
+                    }
                 }
             })
 
             reactionButton.setReactDismissListener(object : View.OnLongClickListener {
                 override fun onLongClick(v: View?): Boolean {
                     Log.d(TAG, "setReactDismissListener called")
-                    onReactionChanged(v)
+                    if (Utils.isNetworkAvailable(context)) {
+                        onReactionChanged(v)
+                    } else {
+                        context.showToast("No Internet Connection !", Toast.LENGTH_SHORT)
+                    }
                     return false
                 }
             })
@@ -354,4 +372,5 @@ class PostAdapter(
         fun updatePost(post: Post)
         fun deletePost(postId: Int, mAdapterPosition: Int)
     }
+
 }

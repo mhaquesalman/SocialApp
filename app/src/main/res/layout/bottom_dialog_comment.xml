@@ -35,7 +35,9 @@
         android:layout_height="match_parent"
         android:id="@+id/commentRV"
         android:layout_below="@id/comments_count"
-        android:layout_above="@id/comment_wrapper" />
+        android:layout_above="@id/comment_wrapper"
+        tools:listitem="@layout/item_comment"
+        tools:itemCount="3"/>
 
     <ProgressBar
         android:layout_width="wrap_content"

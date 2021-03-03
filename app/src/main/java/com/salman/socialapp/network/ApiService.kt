@@ -52,6 +52,9 @@ interface ApiService {
     @POST("postcomment")
     fun postComment(@Body postComment: PostComment): Call<CommentResponse>
 
+    @GET("deletecomment")
+    fun deleteComment(@QueryMap params: Map<String, String>): Call<GeneralResponse>
+
     @GET("getpostcomments")
     fun getPostComments(@Query("postId") postId: String, @Query("postUserId") postUserId: String): Call<CommentResponse>
 

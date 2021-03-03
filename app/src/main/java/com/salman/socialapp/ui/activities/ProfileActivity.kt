@@ -573,7 +573,7 @@ class ProfileActivity : AppCompatActivity(),
     }
 
     override fun onCommentAdded(position: Int) {
-        postAdapter?.updateCommentCount(position)
+        postAdapter?.increaseCommentCount(position)
     }
 
     override fun updatePost(post: Post) {

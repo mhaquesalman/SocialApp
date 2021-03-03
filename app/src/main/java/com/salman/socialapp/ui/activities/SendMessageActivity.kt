@@ -62,9 +62,8 @@ class SendMessageActivity : AppCompatActivity() {
 
         // intent
         intent?.let {
-            userId = it.getStringExtra("userId")
-            userName = it.getStringExtra("name")
-            profileUrl = it.getStringExtra("profileUrl")
+
+            getDataFromIntent(it)
 
             showUserData()
         }
@@ -81,6 +80,39 @@ class SendMessageActivity : AppCompatActivity() {
 
         text_send.addTextChangedListener(msgTextWatcher)
 
+    }
+
+    private fun getDataFromIntent(it: Intent) {
+        if (
+            it.hasExtra("userId") &&
+            it.hasExtra("name") &&
+            it.hasExtra("profileUrl")
+        ) {
+            userId = it.getStringExtra("userId")
+            userName = it.getStringExtra("name")
+            profileUrl = it.getStringExtra("profileUrl")
+            Log.d(TAG, "data from app")
+        } else if (
+            it.hasExtra("from_user_id") &&
+            it.hasExtra("from_user_name") &&
+            it.hasExtra("from_user_image")
+        ) {
+            userId = it.getStringExtra("from_user_id")
+            userName = it.getStringExtra("from_user_name")
+            profileUrl = it.getStringExtra("from_user_image")
+            Log.d(TAG, "data from background")
+        } else if (
+            it.hasExtra("fromUserId") &&
+            it.hasExtra("fromUserName") &&
+            it.hasExtra("fromUserImage")
+        ) {
+            userId = it.getStringExtra("fromUserId")
+            userName = it.getStringExtra("fromUserName")
+            profileUrl = it.getStringExtra("fromUserImage")
+            Log.d(TAG, "data from foreground")
+        } else {
+            Log.d(TAG, "data from nowhere")
+        }
     }
 
     private fun onImageButtonClicked() {
@@ -135,7 +167,9 @@ class SendMessageActivity : AppCompatActivity() {
         val chatRef = FirebaseDatabase.getInstance().getReference("chats")
         val id = chatRef.push().key
         val chat = Chat(id, sender, receiver, message, imageSent, false)
-        chatRef.child(id!!).setValue(chat)
+        chatRef.child(id!!).setValue(chat).addOnCompleteListener {
+            recycler_view.scrollToPosition(chatList.size - 1)
+        }
 
         // adding users to chat fragment, recent chats with friends
         val chatListRef = FirebaseDatabase.getInstance()
@@ -175,9 +209,7 @@ class SendMessageActivity : AppCompatActivity() {
                 }
                 messageAdapter = MessageAdapter(this@SendMessageActivity, chatList, currentUserId!!, profileUrl!!)
                 recycler_view.adapter = messageAdapter
-                recycler_view.scrollToPosition(chatList.size - 1)
 //                messageAdapter.notifyDataSetChanged()
-//                messageAdapter.notifyItemInserted(chatList.size - 1)
             }
 
             override fun onCancelled(error: DatabaseError) {
@@ -209,7 +241,6 @@ class SendMessageActivity : AppCompatActivity() {
                 showToast(error.message)
             }
         })
-
     }
 
     private fun checkStatus(status: String) {
@@ -306,8 +337,7 @@ class SendMessageActivity : AppCompatActivity() {
 
     private val msgTextWatcher: TextWatcher = object : TextWatcher {
 
-        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-        }
+        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {}
 
         override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
             val msgText = text_send.text.toString().trim()

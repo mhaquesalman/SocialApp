@@ -18,7 +18,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.CommentAdapter
 import com.salman.socialapp.model.Comment
@@ -27,11 +26,13 @@ import com.salman.socialapp.ui.activities.MainActivity
 import com.salman.socialapp.ui.activities.ProfileActivity
 import com.salman.socialapp.viewmodels.CommentViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
-import kotlinx.android.synthetic.main.bottom_dialog_comment.*
 import kotlinx.android.synthetic.main.bottom_dialog_comment.view.*
 
 private const val TAG = "CommentsBottomDialog"
-class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded {
+class CommentsBottomDialog : BottomSheetDialogFragment(),
+    IOnCommentRepliesAdded,
+    IOnCommentDelete,
+    CommentRepliesBottomDialog.IOnCommentRepliesDelete {
     lateinit var commentCountTV: TextView
     lateinit var commentRecView: RecyclerView
     lateinit var commentET: EditText
@@ -89,7 +90,7 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
             postAdapterPosition = getInt("postAdapterPosition")
         }
 
-        Log.d(TAG, "userId: " + userId)
+        CommentRepliesBottomDialog.setIOnCommentRepliesDelete(this)
 
     }
 
@@ -119,18 +120,14 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
             bottomSheet?.setBackgroundColor(Color.TRANSPARENT)
             bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet!!)
 //            BottomSheetBehavior.from(bottomSheet!!).peekHeight = Resources.getSystem().getDisplayMetrics().heightPixels
-            bottomSheetBehavior.state = BottomSheetBehavior.STATE_COLLAPSED
+            bottomSheetBehavior.state = BottomSheetBehavior.STATE_HALF_EXPANDED
 
         }
 
         commentET.addTextChangedListener(object : TextWatcher {
-            override fun afterTextChanged(p0: Editable?) {
-                /**/
-            }
+            override fun afterTextChanged(p0: Editable?) { /**/ }
 
-            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                /**/
-            }
+            override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) { /**/ }
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 if (s!!.length >= 1) {
@@ -204,6 +201,7 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
                 commentItems.addAll(commentResponse.comments)
                 commentAdapter = CommentAdapter(mContext, commentItems, iOnCommentRepliesAdded, postAdapterPosition, userId!!)
                 commentRecView.adapter = commentAdapter
+                commentAdapter?.setIOnCommentDelete(this)
             } else {
                 mContext.showToast(commentResponse.message)
             }
@@ -229,5 +227,35 @@ class CommentsBottomDialog : BottomSheetDialogFragment(), IOnCommentRepliesAdded
             mComment.comments = updatedComments
         }
         commentAdapter?.notifyItemChanged(mAdapterPosition, mComment.comments.get(0))
+    }
+
+    override fun onCommentDelete(position: Int, cid: String?, postId: String?, commentOn: String?) {
+//        progressBar.show()
+        Log.d(TAG, "Comment: $position / $cid / $postId / $commentOn")
+        val hashMap: HashMap<String, String> = HashMap()
+        hashMap.put("cid", cid!!)
+        hashMap.put("postId", postId!!)
+        hashMap.put("commentOn", commentOn!!)
+
+        commentViewModel.deleteComment(hashMap)?.observe(this, Observer { generalResponse ->
+//            progressBar.hide()
+            mContext.showToast(generalResponse.message, Toast.LENGTH_SHORT)
+            if (generalResponse.status == 200) {
+                getPostComments()
+                // update post recyclerview after removing comment in a post
+                onCommentDeletePostUpdate?.onCommentDeletePostUpdate(postAdapterPosition)
+            }
+        })
+    }
+
+    companion object {
+        private var onCommentDeletePostUpdate: IOnCommentDeletePostUpdate? = null
+        fun setIOnCommentDeletePostUpdate(onCommentDeletePostUpdate: IOnCommentDeletePostUpdate) {
+            this.onCommentDeletePostUpdate = onCommentDeletePostUpdate
+        }
+    }
+
+    override fun onCommentRepliesDelete() {
+        getPostComments()
     }
 }

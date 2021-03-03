@@ -1,6 +1,11 @@
 package com.salman.socialapp.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
+
+@Entity(tableName = "posts")
 data class Post(
+    @PrimaryKey(autoGenerate = false)
     val postId: Int = 0,
     val postUserId: String? = null,
     val post: String? = null,

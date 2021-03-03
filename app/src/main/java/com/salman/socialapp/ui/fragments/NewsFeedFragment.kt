@@ -2,32 +2,44 @@ package com.salman.socialapp.ui.fragments
 
 import android.content.Context
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.PostAdapter
+import com.salman.socialapp.local.viewmodel.LocalViewModel
 import com.salman.socialapp.model.PerformReaction
 import com.salman.socialapp.model.Post
 import com.salman.socialapp.ui.activities.MainActivity
+import com.salman.socialapp.util.Utils
 import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import kotlinx.android.synthetic.main.fragment_news_feed.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val TAG = "NewsFeedFragment"
 class NewsFeedFragment : Fragment() {
 
+    private var posts: List<Post> = ArrayList()
     lateinit var mContext: Context
     lateinit var mainViewModel: MainViewModel
+    lateinit var localViewModel: LocalViewModel
     var postAdapter: PostAdapter? = null
     var currentUserId: String? = ""
     var limit = 5
@@ -35,6 +47,7 @@ class NewsFeedFragment : Fragment() {
     var isFirstLoading = true
     var isDataAvailable = true
     private val postItems: MutableList<Post> = ArrayList()
+//    private var postListFromLocalDb: List<Post> = ArrayList()
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -59,26 +72,53 @@ class NewsFeedFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         initialization()
-        fetchNewsFeed()
+
+        if (Utils.isNetworkAvailable(mContext)) {
+            fetchNewsFeed()
+        } else {
+            val handler = Handler()
+            Thread(Runnable {
+                getPostListFromLocalDb()
+               handler.postDelayed(Runnable {
+                    mContext.showToast("No Internet Connection !")
+                }, 500)
+            }).start()
+
+/*            CoroutineScope(Dispatchers.IO).launch {
+                getPostListFromLocalDb()
+                withContext(Dispatchers.Main) {
+                    mContext.showToast("No Internet Connection !")
+                }
+            }*/
+        }
     }
 
     private fun initialization() {
         mainViewModel = ViewModelProvider(mContext as FragmentActivity, ViewModelFactory()).get(MainViewModel::class.java)
+        localViewModel = ViewModelProvider(mContext as FragmentActivity).get(LocalViewModel::class.java)
+//        localViewModel = ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory()).get(LocalViewModel::class.java)
         newsFeedRV.layoutManager = LinearLayoutManager(mContext)
 
-        newsFeedRV.addOnScrollListener(object : RecyclerView.OnScrollListener(){
+        newsFeedRV.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if (isLastItemReached() && isDataAvailable) {
-                    offset += limit
-                    fetchNewsFeed()
+                if (Utils.isNetworkAvailable(mContext)) {
+                    if (isLastItemReached() && isDataAvailable) {
+                        offset += limit
+                        fetchNewsFeed()
+                    }
                 }
             }
         })
 
         swipe.setOnRefreshListener {
-            offset = 0
-            isFirstLoading = true
-            fetchNewsFeed()
+            if (Utils.isNetworkAvailable(mContext)) {
+                offset = 0
+                isFirstLoading = true
+                fetchNewsFeed()
+            } else {
+                mContext.showToast("Try connecting to the internet..")
+                swipe.isRefreshing = false
+            }
         }
     }
 
@@ -134,7 +174,34 @@ class NewsFeedFragment : Fragment() {
                 }
                 mContext.showToast(postResponse.message)
             }
+            if (isDataAvailable) {
+                Log.d(TAG, "postItems: " + postItems.size)
+                deletePostListFromLocalDb()
+                savePostListToLocalDb(postItems)
+            }
         })
+    }
+
+    private fun savePostListToLocalDb(postItems: MutableList<Post>) {
+        Log.d(TAG, "savePostListToLocalDb: " + postItems.size)
+        lifecycleScope.launch {
+            localViewModel.savePostListToLocalDb(postItems)
+        }
+    }
+
+    private fun deletePostListFromLocalDb() {
+        Log.d(TAG, "deletePostListFromLocalDb: called")
+        lifecycleScope.launch {
+            localViewModel.deletePostListFromLocalDb()
+        }
+    }
+
+    private fun getPostListFromLocalDb() {
+        val postListFromLocalDb = localViewModel.getPostListFromLocalDb()
+        Log.d(TAG, "getPostListFromLocalDb: " + postListFromLocalDb.size)
+//        val list: MutableList<Post> = ArrayList(postListFromLocalDb)
+        postAdapter = PostAdapter(mContext, postListFromLocalDb.toMutableList(), currentUserId!!)
+        newsFeedRV.adapter = postAdapter
     }
 
     override fun onDestroyView() {
@@ -163,7 +230,11 @@ class NewsFeedFragment : Fragment() {
     }
 
     fun onCommentAdded(position: Int) {
-        postAdapter?.updateCommentCount(position)
+        postAdapter?.increaseCommentCount(position)
+    }
+
+    fun onCommentDelete(position: Int) {
+        postAdapter?.decreaseCommentCount(position)
     }
 
     companion object {

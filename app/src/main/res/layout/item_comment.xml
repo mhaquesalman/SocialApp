@@ -2,9 +2,10 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="10dp"
-    android:layout_marginEnd="10dp"
+    android:layout_marginStart="8dp"
+    android:layout_marginEnd="8dp"
     android:layout_marginBottom="5dp"
+    android:padding="5dp"
     android:background="@color/item_background_color"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -59,11 +60,11 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:id="@+id/comment_reply"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 android:textColor="@android:color/black"
                 android:layout_weight="1"
                 android:gravity="end"
-                android:text="reply" />
+                android:text="Reply" />
         </LinearLayout>
 
         <LinearLayout
@@ -80,7 +81,8 @@
                 android:id="@+id/more_comments"
                 android:textColor="@android:color/black"
                 android:textStyle="bold"
-                android:layout_marginBottom="4dp"
+                android:layout_marginBottom="5dp"
+                android:padding="2dp"
                 tools:text="2 more comments"/>
 
             <RelativeLayout
@@ -100,7 +102,7 @@
                     android:layout_height="wrap_content"
                     android:id="@+id/subComment_profile_name"
                     android:layout_toEndOf="@id/subComment_profile_image"
-                    tools:text="Subcomment Username"
+                    tools:text="Sub Username"
                     android:textStyle="bold"
                     android:textSize="12sp"
                     android:layout_marginStart="10dp"
@@ -121,10 +123,10 @@
                     android:layout_height="wrap_content"
                     android:id="@+id/subComment_date"
                     android:layout_below="@id/subComment_body"
-                    android:layout_alignParentEnd="true"
+                    android:layout_alignStart="@id/subComment_body"
+                    android:layout_toEndOf="@id/subComment_profile_image"
                     tools:text="just now"
-                    android:textSize="12sp"
-                    android:layout_marginEnd="10dp" />
+                    android:textSize="12sp" />
             </RelativeLayout>
 
         </LinearLayout>
