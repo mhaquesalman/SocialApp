@@ -28,13 +28,19 @@ $app->post('/login', function ( $request,  $response, $args) {
 
     if($count==1){
         // update data because this user already exist
-    $query =$pdo->prepare("UPDATE `users` SET  
+
+/*     $query =$pdo->prepare("UPDATE `users` SET  
     `name` = :name, 
     `email` = :email,
     `profileUrl` = :profileUrl,
     `coverUrl` = :coverUrl,
 	`userToken` = :userToken
-     WHERE `uid` = :uid; ");      
+     WHERE `uid` = :uid; ");   */    
+
+     $query =$pdo->prepare("UPDATE `users` SET  
+     `email` = :email,
+     `userToken` = :userToken
+      WHERE `uid` = :uid; ");  
     $query->execute($requestData);
     $errorData = $query->errorInfo();
     } else{
