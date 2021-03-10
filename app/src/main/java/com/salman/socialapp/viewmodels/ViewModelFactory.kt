@@ -5,13 +5,16 @@ import androidx.lifecycle.ViewModelProvider
 import com.salman.socialapp.network.ApiClient
 import com.salman.socialapp.network.ApiService
 import com.salman.socialapp.repositories.Repository
+import dagger.hilt.android.AndroidEntryPoint
 import java.lang.IllegalArgumentException
+import javax.inject.Inject
 
 class ViewModelFactory : ViewModelProvider.NewInstanceFactory() {
 
     var repository: Repository? = null
+
     init {
-        val apiService = ApiClient.getRetrofit()?.create(ApiService::class.java)
+        val apiService: ApiService? = ApiClient.getRetrofit()?.create(ApiService::class.java)
         repository = Repository.getRepository(apiService)
     }
 
@@ -47,3 +50,4 @@ class ViewModelFactory : ViewModelProvider.NewInstanceFactory() {
         }
     }
 }
+

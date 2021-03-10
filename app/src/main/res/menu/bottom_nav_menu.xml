@@ -5,20 +5,21 @@
     <item
         android:id="@+id/newsFeedFragment"
         android:icon="@drawable/ic_home"
-        android:title="Home" />
+        android:title="@string/home_nav_btn" />
 
     <item
         android:id="@+id/friendsFragment"
         android:icon="@drawable/ic_friends"
-        android:title="Friends" />
+        android:title="@string/friends_nav_btn" />
 
     <item
         android:id="@+id/profileActivity"
         android:icon="@drawable/ic_person"
-        android:title="Profile" />
+        android:title="@string/profile_nav_btn" />
 
     <item
         android:id="@+id/notificationFragment"
         android:icon="@drawable/ic_notification"
-        android:title="Notification" />
+        android:title="@string/notification_nav_btn" />
+
 </menu>

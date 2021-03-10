@@ -8,15 +8,12 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
-import androidx.lifecycle.LifecycleCoroutineScope
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.PostAdapter
 import com.salman.socialapp.local.viewmodel.LocalViewModel
@@ -27,16 +24,16 @@ import com.salman.socialapp.util.Utils
 import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.fragment_news_feed.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
+import java.lang.Runnable
 
 private const val TAG = "NewsFeedFragment"
+
+@AndroidEntryPoint
 class NewsFeedFragment : Fragment() {
 
-    private var posts: List<Post> = ArrayList()
     lateinit var mContext: Context
     lateinit var mainViewModel: MainViewModel
     lateinit var localViewModel: LocalViewModel
@@ -87,6 +84,7 @@ class NewsFeedFragment : Fragment() {
 /*            CoroutineScope(Dispatchers.IO).launch {
                 getPostListFromLocalDb()
                 withContext(Dispatchers.Main) {
+                    delay(500)
                     mContext.showToast("No Internet Connection !")
                 }
             }*/
@@ -96,7 +94,7 @@ class NewsFeedFragment : Fragment() {
     private fun initialization() {
         mainViewModel = ViewModelProvider(mContext as FragmentActivity, ViewModelFactory()).get(MainViewModel::class.java)
         localViewModel = ViewModelProvider(mContext as FragmentActivity).get(LocalViewModel::class.java)
-//        localViewModel = ViewModelProvider(this, ViewModelProvider.AndroidViewModelFactory()).get(LocalViewModel::class.java)
+//        localViewModel = ViewModelProvider((mContext as FragmentActivity), ViewModelProvider.AndroidViewModelFactory((mContext as FragmentActivity).application)).get(LocalViewModel::class.java)
         newsFeedRV.layoutManager = LinearLayoutManager(mContext)
 
         newsFeedRV.addOnScrollListener(object : RecyclerView.OnScrollListener() {
@@ -176,8 +174,8 @@ class NewsFeedFragment : Fragment() {
             }
             if (isDataAvailable) {
                 Log.d(TAG, "postItems: " + postItems.size)
-                deletePostListFromLocalDb()
-                savePostListToLocalDb(postItems)
+//                deletePostListFromLocalDb()
+//                savePostListToLocalDb(postItems)
             }
         })
     }

@@ -53,14 +53,14 @@ class MessageActivity : AppCompatActivity() {
     private fun initialization() {
         // Tab Layout and viewpager
         val viewPagerAdapter = ViewPagerAdapter(supportFragmentManager)
-        viewPagerAdapter.addFragment(MessageFragment.getInstance(), "Friends")
-        viewPagerAdapter.addFragment(RecentFragment.getInstance(), "Recents")
+        viewPagerAdapter.addFragment(MessageFragment.getInstance(), resources.getString(R.string.friends_title))
+        viewPagerAdapter.addFragment(RecentFragment.getInstance(), resources.getString(R.string.recent_title))
         view_pager.adapter = viewPagerAdapter
 
         // attach tablayout with viewpager
         tab_layout.setupWithViewPager(view_pager)
         tab_layout.getTabAt(0)?.setIcon(R.drawable.ic_friends)
-
+        tab_layout.getTabAt(1)?.setIcon(R.drawable.ic_recent_message)
     }
 
     fun showProgressBar() {

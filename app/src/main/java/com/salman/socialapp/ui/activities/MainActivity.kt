@@ -1,18 +1,12 @@
 package com.salman.socialapp.ui.activities
 
 import android.content.Intent
-import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.text.Html
-import android.text.SpannableString
-import android.text.Spanned
-import android.text.style.TypefaceSpan
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -29,15 +23,19 @@ import com.salman.socialapp.ui.fragments.NotificationFragment
 import com.salman.socialapp.util.*
 import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
 
 private const val TAG = "MainActivity"
 const val USER_ID = "uid"
+
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity(),
     FriendRequestAdapter.OnClickPerformAction,
     PostAdapter.IUpdateUserReaction,
     IOnCommentAdded,
-    IOnCommentDeletePostUpdate{
+    IOnCommentDeletePostUpdate {
+
     lateinit var mainViewModel: MainViewModel
     val newsFeedFragment = NewsFeedFragment.getInstance()
     val friendsFragment = FriendsFragment.getInstance()
@@ -47,7 +45,7 @@ class MainActivity : AppCompatActivity(),
     var firebaseUser: FirebaseUser? = null
     var reference: DatabaseReference? = null
 
-    @RequiresApi(Build.VERSION_CODES.P)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -135,6 +133,10 @@ class MainActivity : AppCompatActivity(),
                 }
                 R.id.notificationFragment -> {
                     setFragment(notificationFragment)
+                    return@setOnNavigationItemSelectedListener true
+                }
+                R.id.settings_menu -> {
+                    //todo: method
                     return@setOnNavigationItemSelectedListener true
                 }
             }

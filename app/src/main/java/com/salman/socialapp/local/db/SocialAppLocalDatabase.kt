@@ -17,7 +17,7 @@ abstract class SocialAppLocalDatabase : RoomDatabase() {
 
     abstract fun socialAppDao(): SocialAppDao
 
-    companion object {
+/*    companion object {
         @Volatile
         private var INSTANCE: SocialAppLocalDatabase? = null
         fun getSocialAppLocalDatabase(context: Context): SocialAppLocalDatabase {
@@ -32,6 +32,6 @@ abstract class SocialAppLocalDatabase : RoomDatabase() {
             }
             return INSTANCE!!
         }
-    }
+    }*/
 
 }

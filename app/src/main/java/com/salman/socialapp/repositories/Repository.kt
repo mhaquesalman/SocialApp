@@ -13,13 +13,17 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
+import javax.inject.Inject
 
 const val TAG = "Repository"
 class Repository(val apiService: ApiService?) {
 
     companion object {
         private var repository: Repository? = null
-        fun getRepository(apiService: ApiService?): Repository? {
+        val INSTANCE: Repository?
+            get() = repository
+
+       fun getRepository(apiService: ApiService?): Repository? {
             if (repository == null) {
                 repository = Repository(apiService)
             }

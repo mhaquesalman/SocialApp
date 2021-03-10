@@ -1,8 +1,15 @@
 <resources>
     <string name="app_name">SocialApp</string>
-    <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="accept_btn_txt">Accept</string>
     <string name="cancel_btn_txt">Cancel</string>
+    <string name="home_nav_btn">Home</string>
+    <string name="friends_nav_btn">Friends</string>
+    <string name="profile_nav_btn">Profile</string>
+    <string name="notification_nav_btn">Notification</string>
+    <string name="message_menu_btn">Message</string>
+    <string name="language_menu_btn">Language</string>
+    <string name="friends_title">Friends</string>
+    <string name="recent_title">Recents</string>
     <string name="default_notification_channel_id">socialapp_channel_messaging</string>
 
     <string-array name="privacy_level">
