@@ -21,6 +21,7 @@ import com.esafirm.imagepicker.model.Image
 import com.google.firebase.auth.FirebaseAuth
 import com.salman.socialapp.R
 import com.salman.socialapp.network.BASE_URL
+import com.salman.socialapp.util.Utils
 import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.PostUploadViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
@@ -51,6 +52,7 @@ class PostUploadActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Utils.getLanguage(this)
         setContentView(R.layout.activity_post_upload)
 
         initialization()

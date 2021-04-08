@@ -24,14 +24,14 @@ object AppModule {
     @Provides
     fun provideSocialAppLocalDatabase(@ApplicationContext context: Context): SocialAppLocalDatabase =
         Room.databaseBuilder(
-        context,
-        SocialAppLocalDatabase::class.java,
-        DATABASE_NAME
-    ).build()
+            context,
+            SocialAppLocalDatabase::class.java,
+            DATABASE_NAME
+        ).fallbackToDestructiveMigration().build()
 
     @Singleton
     @Provides
     fun provideSocialAppDao(socialAppLocalDatabase: SocialAppLocalDatabase): SocialAppDao =
         socialAppLocalDatabase.socialAppDao()
-    
+
 }

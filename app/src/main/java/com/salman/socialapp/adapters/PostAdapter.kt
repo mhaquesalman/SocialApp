@@ -84,7 +84,7 @@ class PostAdapter(
     }
 
     override fun onBindViewHolder(holder: PostViewHolder, position: Int) {
-        val post = postItems.get(position)
+        val post = postItems[position]
         Log.d(TAG, "post: $post")
 
         holder.peopleName.text = post.name
@@ -321,14 +321,14 @@ class PostAdapter(
             postEditBtn.setOnClickListener {
                 if (iPostMoreAction != null && mAdapterPosition != RecyclerView.NO_POSITION) {
                     iPostMoreAction?.updatePost(postItems[mAdapterPosition])
-                    Log.d(TAG, "AdapterPosition: $mAdapterPosition")
+                    Log.d(TAG, "AdapterPosition: $mAdapterPosition | ${postItems.size}")
                 }
                 bottomSheetDialog.dismiss()
             }
             postDeleteBtn.setOnClickListener {
                 if (iPostMoreAction != null && mAdapterPosition != RecyclerView.NO_POSITION) {
                     iPostMoreAction?.deletePost(postItems[mAdapterPosition].postId, mAdapterPosition)
-                    Log.d(TAG, "AdapterPosition: $mAdapterPosition")
+                    Log.d(TAG, "AdapterPosition: $mAdapterPosition | ${postItems.size}")
                 }
                 bottomSheetDialog.dismiss()
             }

@@ -1,15 +1,15 @@
 package com.salman.socialapp.local.db
 
-import android.content.Context
 import androidx.room.Database
-import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.salman.socialapp.local.ProfilePost
 import com.salman.socialapp.model.Post
+import com.salman.socialapp.model.Profile
 
-const val DATABASE_VERSION = 1
+const val DATABASE_VERSION = 4
 const val DATABASE_NAME = "SocialAppRoom"
 @Database(
-    entities = [Post::class],
+    entities = [Post::class, Profile::class, ProfilePost::class],
     version = DATABASE_VERSION,
     exportSchema = false
 )

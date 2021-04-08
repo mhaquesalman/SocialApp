@@ -1,6 +1,7 @@
 package com.salman.socialapp.util
 
 import android.content.Context
+import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -8,7 +9,10 @@ import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.salman.socialapp.model.UserInfo
+import com.salman.socialapp.ui.activities.MY_LANGUAGE
 import java.lang.reflect.Type
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.time.LocalDateTime
@@ -19,6 +23,10 @@ import java.util.*
 private const val TAG = "Utils"
 private const val SHARED_PREF = "logged_in_user"
 private const val CURRENT_USER = "user"
+const val ADDRESS = "www.google.com"
+const val PORT = 80
+const val TIMEOUT = 1500
+
 class Utils(val context: Context) {
 
     fun addUserToSharedPref(userInfo: UserInfo) {
@@ -43,22 +51,25 @@ class Utils(val context: Context) {
         editor.commit()
     }
 
-/*    fun isNetWorkAvailable(): Boolean {
-        var result = false
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
-        connectivityManager?.let {
-            it.getNetworkCapabilities(it.activeNetwork)?.apply {
-                result = when {
-                    hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-                    hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-                    else -> false
-                }
-            }
-        }
-        return result
-    }*/
-
     companion object {
+
+        fun setLanguage(lang: String, context: Context) {
+            val locale = Locale(lang)
+            Locale.setDefault(locale)
+            val configuration = Configuration()
+            configuration.locale = locale
+            context.resources.updateConfiguration(configuration, context.resources.displayMetrics)
+//            val editor = context.getSharedPreferences("Settings", Context.MODE_PRIVATE).edit()
+//            editor.putString(MY_LANGUAGE, lang)
+//            editor.commit()
+        }
+
+        fun getLanguage(context: Context): String {
+            val prefs = context.getSharedPreferences("Settings", Context.MODE_PRIVATE)
+            val lang = prefs.getString(MY_LANGUAGE, "en") ?: "en"
+            setLanguage(lang, context)
+            return lang
+        }
 
         fun formatDate(date: String?): String {
 /*         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -79,9 +90,11 @@ class Utils(val context: Context) {
 
         fun isNetworkAvailable(context: Context): Boolean {
             var result = false
-            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val capabilities = connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
+            val connectivityManager =
+                context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val capabilities =
+                    connectivityManager.getNetworkCapabilities(connectivityManager.activeNetwork)
                 if (capabilities != null) {
                     result = when {
                         capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
@@ -95,6 +108,35 @@ class Utils(val context: Context) {
             }
             return result
         }
+
+        fun isNetConnectionAvailable(): Boolean {
+            return try {
+                val socket = Socket()
+                val socketAddress = InetSocketAddress(ADDRESS, PORT)
+                socket.connect(socketAddress, TIMEOUT)
+                socket.close()
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        /*fun isNetWorkAvailable(context: Context): Boolean {
+        var result = false
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        connectivityManager?.let {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                it.getNetworkCapabilities(it.activeNetwork)?.apply {
+                    result = when {
+                        hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
+                        hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
+                        else -> false
+                    }
+                }
+            }
+        }
+        return result
+    }*/
 
     }
 

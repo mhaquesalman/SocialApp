@@ -1,14 +1,9 @@
 package com.salman.socialapp.local.repository
 
-import android.app.Application
+import com.salman.socialapp.local.ProfilePost
 import com.salman.socialapp.local.db.SocialAppDao
-import com.salman.socialapp.local.db.SocialAppLocalDatabase
 import com.salman.socialapp.model.Post
-import com.salman.socialapp.network.ApiService
-import com.salman.socialapp.repositories.Repository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import com.salman.socialapp.model.Profile
 import javax.inject.Inject
 
 class LocalRepository
@@ -23,13 +18,24 @@ constructor (val socialAppDao: SocialAppDao) {
         }
     }*/
 
-    suspend fun savePostListToLocalDb(posts: List<Post>) {
-        socialAppDao.savePostListToRoom(posts)
-    }
+    suspend fun savePostListToLocalDb(posts: List<Post>) = socialAppDao.savePostListToRoom(posts)
+
+    suspend fun deletePostListFromLocalDb() = socialAppDao.deletePostListFromRoom()
 
     fun getPostListFromLocalDb() = socialAppDao.getPostListFromRoom()
 
-    suspend fun deletePostListFromLocalDb() {
-        socialAppDao.deletePostListFromRoom()
-    }
+    suspend fun saveProfileToLocalDb(profile: Profile) = socialAppDao.saveProfileDataToRoom(profile)
+
+    suspend fun deleteProfileFromLocalDb() = socialAppDao.deleteProfileDataFromRoom()
+
+    fun getProfileFromLocalDb() = socialAppDao.getProfileDataFromRoom()
+
+    suspend fun saveProfilePostListToLocalDb(profilePosts: List<ProfilePost>) =
+        socialAppDao.saveProfilePostListToRoom(profilePosts)
+
+    suspend fun deleteProfilePostListFromLocalDb() = socialAppDao.deleteProfilePostListFromRoom()
+
+    fun getProfilePostListFromLocalDb() = socialAppDao.getProfilePostListFromRoom()
+
+
 }

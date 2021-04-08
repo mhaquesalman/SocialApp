@@ -1,12 +1,18 @@
 package com.salman.socialapp.ui.activities
 
+import android.content.Context
+import android.content.DialogInterface
 import android.content.Intent
+import android.content.res.Configuration
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.widget.Toolbar
+import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -25,9 +31,11 @@ import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.*
 
 private const val TAG = "MainActivity"
 const val USER_ID = "uid"
+const val MY_LANGUAGE = "My_language"
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity(),
@@ -42,16 +50,22 @@ class MainActivity : AppCompatActivity(),
     val notificationFragment = NotificationFragment.getInstance()
     var currentUserId: String? = ""
     var userImage: String? = ""
+    var getLang: String = ""
     var firebaseUser: FirebaseUser? = null
     var reference: DatabaseReference? = null
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // load language from sharedPref
+        getLang = getLocale()
         setContentView(R.layout.activity_main)
 
         setSupportActionBar(toolbar)
 //        supportActionBar?.setTitle(Html.fromHtml("<font color='#FFFFFF'>SocialApp</font>"))
+
+
+        setMenuTintColor(toolbar)
 
         val bundle = intent.extras
         if (bundle != null) {
@@ -86,6 +100,15 @@ class MainActivity : AppCompatActivity(),
 
     }
 
+    private fun setMenuTintColor(toolbar: Toolbar?) {
+        var drawable = toolbar?.overflowIcon
+        if (drawable != null) {
+            drawable = DrawableCompat.wrap(drawable)
+            DrawableCompat.setTint(drawable.mutate(), resources.getColor(android.R.color.white))
+            toolbar?.overflowIcon = drawable
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menuInflater.inflate(R.menu.app_bar_menu, menu)
         return true
@@ -96,6 +119,9 @@ class MainActivity : AppCompatActivity(),
             R.id.message_menu -> {
                 val mIntent = Intent(this, MessageActivity::class.java)
                 startActivity(mIntent)
+            }
+            R.id.settings_menu -> {
+                showDialog()
             }
         }
         return true
@@ -135,13 +161,47 @@ class MainActivity : AppCompatActivity(),
                     setFragment(notificationFragment)
                     return@setOnNavigationItemSelectedListener true
                 }
-                R.id.settings_menu -> {
-                    //todo: method
-                    return@setOnNavigationItemSelectedListener true
-                }
             }
             return@setOnNavigationItemSelectedListener true
         }
+    }
+
+    private fun showDialog() {
+        val items = arrayOf("English", "বাংলা")
+        val builder = AlertDialog.Builder(this).apply {
+            setTitle(resources.getString(R.string.choose_Language_title))
+            val checkedItem = if (getLang.equals("bn")) 1 else 0
+            setSingleChoiceItems(items, checkedItem, DialogInterface.OnClickListener { dialogInterface, i ->
+                if (i == 0) {
+                    setLocale("en")
+                    recreate()
+                } else {
+                    setLocale("bn")
+                    recreate()
+                }
+                dialogInterface.dismiss()
+            })
+        }
+        val dialog = builder.create()
+        dialog.show()
+    }
+
+    private fun setLocale(lang: String) {
+        val locale = Locale(lang)
+        Locale.setDefault(locale)
+        val configuration = Configuration()
+        configuration.locale = locale
+        baseContext.resources.updateConfiguration(configuration, baseContext.resources.displayMetrics)
+        val editor = getSharedPreferences("Settings", Context.MODE_PRIVATE).edit()
+        editor.putString(MY_LANGUAGE, lang)
+        editor.commit()
+    }
+
+    private fun getLocale(): String {
+        val prefs = getSharedPreferences("Settings", Context.MODE_PRIVATE)
+        val lang = prefs.getString(MY_LANGUAGE, "en") ?: "en"
+        setLocale(lang)
+        return lang
     }
 
     private fun setFragment(fragment: Fragment) {
@@ -194,6 +254,10 @@ class MainActivity : AppCompatActivity(),
 
     override fun onCommentDeletePostUpdate(position: Int) {
         newsFeedFragment.onCommentDelete(position)
+    }
+
+    companion object {
+
     }
 
 }

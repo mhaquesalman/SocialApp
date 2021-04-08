@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">SocialApp</string>
+    <string name="accept_btn_txt">গ্রহণ</string>
+    <string name="cancel_btn_txt">বাতিল</string>
+    <string name="home_nav_btn">হোম</string>
+    <string name="friends_nav_btn">বন্ধু</string>
+    <string name="profile_nav_btn">প্রোফাইল</string>
+    <string name="notification_nav_btn">নোটিফিকেশন</string>
+    <string name="message_menu_btn">মেসেজ</string>
+    <string name="language_menu_btn">ভাষা</string>
+    <string name="friends_title">বন্ধু</string>
+    <string name="recent_title">সদ্য</string>
+    <string name="choose_Language_title">ভাষা নির্ধারণ..</string>
+    <string name="data_loading_toast">ডেটা লোডিং সম্পূর্ণ</string>
+    <string name="default_notification_channel_id">socialapp_channel_messaging</string>
+
+    <string-array name="privacy_level">
+        <item>বন্ধু</item>
+        <item>নিজস্ব</item>
+        <item>পাবলিক</item>
+    </string-array>
+</resources>

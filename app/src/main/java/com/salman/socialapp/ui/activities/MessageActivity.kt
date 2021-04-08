@@ -18,11 +18,13 @@ import androidx.fragment.app.FragmentPagerAdapter
 import com.salman.socialapp.R
 import com.salman.socialapp.ui.fragments.MessageFragment
 import com.salman.socialapp.ui.fragments.RecentFragment
+import com.salman.socialapp.util.Utils
 import kotlinx.android.synthetic.main.activity_message.*
 
 class MessageActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Utils.getLanguage(this)
         setContentView(R.layout.activity_message)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

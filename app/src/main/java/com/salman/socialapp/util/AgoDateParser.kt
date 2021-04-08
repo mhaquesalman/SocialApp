@@ -8,12 +8,12 @@ class AgoDateParser {
 
    companion object {
 
-       private val SECOND_MILLIS: Long = 1000
-       private val MINUTE_MILLIS: Long = 60 * SECOND_MILLIS
-       private val HOUR_MILLIS: Long = 60 * MINUTE_MILLIS
-       private val DAY_MILLIS: Long = 24 * HOUR_MILLIS
-       private val MONTHS_MILLIS: Long = 30 * DAY_MILLIS
-       private val YEARS_MILLIS: Long = 12 * MONTHS_MILLIS
+       private const val SECOND_MILLIS: Long = 1000
+       private const val MINUTE_MILLIS: Long = 60 * SECOND_MILLIS
+       private const val HOUR_MILLIS: Long = 60 * MINUTE_MILLIS
+       private const val DAY_MILLIS: Long = 24 * HOUR_MILLIS
+       private const val MONTHS_MILLIS: Long = 30 * DAY_MILLIS
+       private const val YEARS_MILLIS: Long = 12 * MONTHS_MILLIS
 
        fun calculateAgo(dateTime: Long): String {
            var time = dateTime

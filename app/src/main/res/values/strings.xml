@@ -10,6 +10,8 @@
     <string name="language_menu_btn">Language</string>
     <string name="friends_title">Friends</string>
     <string name="recent_title">Recents</string>
+    <string name="choose_Language_title">Choose Language..</string>
+    <string name="data_loading_toast">Data loading complete</string>
     <string name="default_notification_channel_id">socialapp_channel_messaging</string>
 
     <string-array name="privacy_level">

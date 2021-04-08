@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -73,13 +74,7 @@ class NewsFeedFragment : Fragment() {
         if (Utils.isNetworkAvailable(mContext)) {
             fetchNewsFeed()
         } else {
-            val handler = Handler()
-            Thread(Runnable {
-                getPostListFromLocalDb()
-               handler.postDelayed(Runnable {
-                    mContext.showToast("No Internet Connection !")
-                }, 500)
-            }).start()
+            getPostListFromLocalDb()
 
 /*            CoroutineScope(Dispatchers.IO).launch {
                 getPostListFromLocalDb()
@@ -124,7 +119,7 @@ class NewsFeedFragment : Fragment() {
         val layoutManager: LinearLayoutManager = newsFeedRV.layoutManager as LinearLayoutManager
         val position = layoutManager.findLastCompletelyVisibleItemPosition()
         val numberOfItems = postAdapter!!.itemCount
-        Log.d(TAG, "position: $position numberOfItems: $numberOfItems")
+        Log.d(TAG, "position: $position | numberOfItems: $numberOfItems")
         return (position >= numberOfItems - 1)
     }
 
@@ -144,6 +139,7 @@ class NewsFeedFragment : Fragment() {
         mainViewModel.getNewsFeed(params)?.observe(viewLifecycleOwner, Observer { postResponse ->
             (activity as MainActivity).hideProgressBar()
             if (postResponse.status == 200) {
+            mContext.showToast(mContext.resources.getString(R.string.data_loading_toast), Toast.LENGTH_SHORT)
                 if (swipe.isRefreshing) {
 //                    postAdapter.posts.clear()
                     postItems.clear()
@@ -174,8 +170,8 @@ class NewsFeedFragment : Fragment() {
             }
             if (isDataAvailable) {
                 Log.d(TAG, "postItems: " + postItems.size)
-//                deletePostListFromLocalDb()
-//                savePostListToLocalDb(postItems)
+                deletePostListFromLocalDb()
+                savePostListToLocalDb(postItems)
             }
         })
     }
@@ -195,11 +191,18 @@ class NewsFeedFragment : Fragment() {
     }
 
     private fun getPostListFromLocalDb() {
-        val postListFromLocalDb = localViewModel.getPostListFromLocalDb()
-        Log.d(TAG, "getPostListFromLocalDb: " + postListFromLocalDb.size)
-//        val list: MutableList<Post> = ArrayList(postListFromLocalDb)
-        postAdapter = PostAdapter(mContext, postListFromLocalDb.toMutableList(), currentUserId!!)
-        newsFeedRV.adapter = postAdapter
+        val handler = Handler()
+        Thread (Runnable {
+            val postListFromLocalDb = localViewModel.getPostListFromLocalDb()
+            Log.d(TAG, "getPostListFromLocalDb: " + postListFromLocalDb.size)
+
+            handler.postDelayed(Runnable {
+                mContext.showToast("No Internet Connection !")
+                // val list: MutableList<Post> = ArrayList(postListFromLocalDb)
+                postAdapter = PostAdapter(mContext, postListFromLocalDb.toMutableList(), currentUserId!!)
+                newsFeedRV.adapter = postAdapter
+            }, 500)
+        }).start()
     }
 
     override fun onDestroyView() {

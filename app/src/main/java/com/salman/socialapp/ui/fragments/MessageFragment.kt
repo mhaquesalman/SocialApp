@@ -109,11 +109,11 @@ class MessageFragment : Fragment() {
     }
 
     private fun loadFriendsFromFirebase(friends: List<Friend>) {
-        (activity as MessageActivity).hideProgressBar()
         val dataRef = FirebaseDatabase.getInstance().getReference("fusers")
 
         dataRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
+                (activity as MessageActivity).hideProgressBar()
                 friendList.clear()
                 for (snapshot in dataSnapshot.children) {
                     val firebaseUserInfo = snapshot.getValue(FirebaseUserInfo::class.java)

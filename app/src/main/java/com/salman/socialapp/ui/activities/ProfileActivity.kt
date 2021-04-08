@@ -1,5 +1,3 @@
-@file:Suppress("MoveLambdaOutsideParentheses")
-
 package com.salman.socialapp.ui.activities
 
 import android.app.ActivityOptions
@@ -9,16 +7,19 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
 import android.util.Log
 import android.util.Pair
 import android.view.View
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
@@ -30,22 +31,35 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.PostAdapter
+import com.salman.socialapp.local.ProfilePost
+import com.salman.socialapp.local.ProfilePostAdapter
+import com.salman.socialapp.local.viewmodel.LocalViewModel
 import com.salman.socialapp.model.PerformAction
 import com.salman.socialapp.model.PerformReaction
 import com.salman.socialapp.model.Post
+import com.salman.socialapp.model.Profile
 import com.salman.socialapp.network.BASE_URL
 import com.salman.socialapp.util.*
 import com.salman.socialapp.viewmodels.ProfileViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
+import dagger.hilt.android.AndroidEntryPoint
 import id.zelory.compressor.Compressor
 import kotlinx.android.synthetic.main.activity_profile.*
+import kotlinx.coroutines.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import java.io.File
 import java.io.IOException
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.collections.HashMap
+import kotlin.concurrent.schedule
+import kotlin.concurrent.thread
 
-private const val TAG = "ProfileActivity"
+private const val TAG = "ProfileActivityClass"
+
+@AndroidEntryPoint
 class ProfileActivity : AppCompatActivity(),
     PostAdapter.IUpdateUserReaction,
     IOnCommentAdded, PostAdapter.IPostMoreAction {
@@ -67,17 +81,25 @@ class ProfileActivity : AppCompatActivity(),
     private var isImageSelected = false
     private var isNameChanged = false
     private var enteredName: String? = null
-    var compressedImageFile: File? = null
+    private var compressedImageFile: File? = null
     var currentUserId: String? = ""
     var limit = 5
     var offset = 0
     var isPostEditable = false
     var isFirstLoading = true
     var isDataAvailable = true
-    private val postItems: MutableList<Post> = ArrayList()
-    lateinit var profileViewModel: ProfileViewModel
-    var postAdapter: PostAdapter? = null
-    lateinit var progressDialog: ProgressDialog
+    var isInternetConnectionEstablished = true
+    lateinit var postItems: MutableList<Post>
+    private lateinit var profileViewModel: ProfileViewModel
+
+//        lateinit var localViewModel: LocalViewModel
+    private val localViewModel by viewModels<LocalViewModel>()
+    private var postAdapter: PostAdapter? = null
+    private lateinit var profilePostAdapter: ProfilePostAdapter
+    private lateinit var progressDialog: ProgressDialog
+    // Custom CoroutineScope created by user
+    private val scope = CoroutineScope(Dispatchers.IO + CoroutineName("MyScope"))
+    private val scope2 = CoroutineScope(Dispatchers.IO + CoroutineName("MyScope2"))
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -88,13 +110,14 @@ class ProfileActivity : AppCompatActivity(),
         toolbar.setNavigationOnClickListener {
             super.onBackPressed()
         }
-        
-        initialization()
+
+
         // get user from sharedRef
         getUserFromSharedPref()
 
+
         if (intent != null)
-        userId = intent.getStringExtra(USER_ID)
+            userId = intent.getStringExtra(USER_ID)
 
         if (userId.equals(FirebaseAuth.getInstance().uid)) {
             currentState = 5
@@ -105,53 +128,145 @@ class ProfileActivity : AppCompatActivity(),
             isPostEditable = false
         }
 
-        // fetching user's profile data
-        fetchProfileInfo()
+        // initialize fields
+        initialization()
+
+        // internet connected successfully
+        checkInternetConnection()
+
         // view profile & cover picture
         clickToSeeImage()
 
         swipe.setOnRefreshListener {
-            offset = 0
-            isFirstLoading = true
-            loadProfilePosts()
+            if (isInternetConnectionEstablished) {
+                offset = 0
+                isFirstLoading = true
+                loadProfilePosts()
+            } else {
+                showToast("Try connecting to the internet..")
+                swipe.isRefreshing = false
+            }
         }
 
-        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener(){
+        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                if (isLastItemReached() && isDataAvailable) {
-                    offset += limit
-                    loadProfilePosts()
+                if (isInternetConnectionEstablished) {
+                    if (isLastItemReached() && isDataAvailable) {
+                        offset += limit
+                        loadProfilePosts()
+                    }
                 }
             }
         })
 
     }
 
-/*    override fun onResume() {
+    override fun onResume() {
         super.onResume()
-        loadProfilePosts()
-    } */
 
-    override fun onStart() {
-        super.onStart()
-        loadProfilePosts()
+/*        CoroutineScope(Dispatchers.Main).launch {
+            delay(500)
+            Log.d(TAG, "onResume: $isInternetConnectionEstablished")
+            if (isInternetConnectionEstablished) {
+                loadProfilePosts()
+            } else {
+                getProfilePostListFromLocalDb()
+            }
+        }*/
+
+/*        Handler().postDelayed({
+            Log.d(TAG, "onResume: $isInternetConnectionEstablished")
+            if (isInternetConnectionEstablished) {
+                loadProfilePosts()
+            } else {
+                getProfilePostListFromLocalDb()
+            }
+        }, 500)*/
+
+    }
+
+    private fun checkInternetConnection() {
+
+/*        InternetConnection(object : InternetConnection.Consumer {
+            override fun accept(accept: Boolean) {
+                // If internet connection establish successfully
+                isInternetConnectionEstablished = accept
+                Log.d(TAG, "accept: $isInternetConnectionEstablished")
+                // check intetnet
+                if (isInternetConnectionEstablished) {
+                    // fetching user's profile data from internet
+                    fetchProfileInfo()
+                } else {
+                    // fetching user's profile data from local db
+                    val handler = Handler()
+                    thread {
+                        getProfileDataFromLocalDb()
+                        handler.postDelayed({
+                            showToast("No Internet Connection !")
+                        }, 1000)
+                    }
+                }
+            }
+        })*/
+
+
+        InternetConnection { accept ->
+            Log.d(TAG, "accept: $accept")
+            // If internet connection establish successfully
+            isInternetConnectionEstablished = accept
+            // check intetnet
+            if (isInternetConnectionEstablished) {
+                // fetching user's profile data from internet
+                fetchProfileInfo()
+                loadProfilePosts()
+            } else {
+                // fetching user's profile data from local db
+/*                val handler = Handler()
+                thread {
+                    getProfileDataFromLocalDb()
+                    handler.postDelayed({
+                        showToast("No Internet Connection !")
+                    }, 1000)
+                }*/
+
+                showToast("No Internet Connection")
+                getProfileDataFromLocalDb()
+                getProfilePostListFromLocalDb()
+            }
+        }
     }
 
     override fun onStop() {
         super.onStop()
-        offset = 0
+/*        offset = 0
         postItems.clear()
-        isFirstLoading = true
+        isFirstLoading = true*/
+    }
+
+    override fun onPause() {
+        super.onPause()
+        progressDialog.dismiss()
     }
 
     private fun initialization() {
-        progressDialog = ProgressDialog(this)
+/*        progressDialog = ProgressDialog(this)
         progressDialog.setCancelable(false)
         progressDialog.setTitle("Loading")
-        progressDialog.setMessage("Please wait...")
+        progressDialog.setMessage("Please wait...")*/
+
+        progressDialog = ProgressDialog(this).also {
+            it.setCancelable(false)
+            // set transparent background for custom progress dialog
+            it.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        }
 
         profileViewModel = ViewModelProvider(this, ViewModelFactory()).get(ProfileViewModel::class.java)
+//        localViewModel = ViewModelProvider(this).get(LocalViewModel::class.java)
 
+        postItems = ArrayList()
+        postAdapter = PostAdapter(this, postItems, currentUserId!!, isPostEditable)
+        recyclerView.adapter = postAdapter
+        postAdapter?.setOnPostMoreAction(this)
         recyclerView.layoutManager = LinearLayoutManager(this)
     }
 
@@ -168,8 +283,13 @@ class ProfileActivity : AppCompatActivity(),
         val layoutManager: LinearLayoutManager = recyclerView.layoutManager as LinearLayoutManager
         val position = layoutManager.findLastCompletelyVisibleItemPosition()
         val numberOfItems = postAdapter!!.itemCount
-        Log.d(TAG, "position: " + position + " numberOfItems: " + numberOfItems)
+        Log.d(TAG, "position: $position | numberOfItems: $numberOfItems")
         return (position >= numberOfItems - 1)
+    }
+
+    private fun showProgressDiaglog() {
+        progressDialog.show()
+        progressDialog.setContentView(R.layout.custom_progress_dialog)
     }
 
     private fun clickToSeeImage() {
@@ -179,7 +299,7 @@ class ProfileActivity : AppCompatActivity(),
 
         profile_cover.setOnClickListener(object : View.OnClickListener {
             override fun onClick(view: View?) {
-               viewFullImage(profile_cover, coverUrl)
+                viewFullImage(profile_cover, coverUrl)
             }
         })
     }
@@ -200,7 +320,7 @@ class ProfileActivity : AppCompatActivity(),
     }
 
     private fun fetchProfileInfo() {
-        progressDialog.show()
+        showProgressDiaglog()
         val params = HashMap<String, String>()
         params.put("userId", currentUserId!!)
         if (currentState == 5) {
@@ -227,9 +347,9 @@ class ProfileActivity : AppCompatActivity(),
                     if (profileUri.authority == null) {
                         profileUrl = BASE_URL + profileUrl
                     }
-                    Glide.with(this).load(profileUrl).into(profile_image)
+                    Glide.with(this).load(profileUrl).placeholder(R.drawable.loading_image).into(profile_image)
                 } else {
-                    profileUrl = "" + R.drawable.default_profile_placeholder
+                    profileUrl = R.drawable.default_profile_placeholder.toString()
                 }
                 if (!coverUrl!!.isEmpty()) {
                     val coverUri = Uri.parse(coverUrl)
@@ -238,11 +358,11 @@ class ProfileActivity : AppCompatActivity(),
                     if (coverUri.authority == null) {
                         coverUrl = BASE_URL + coverUrl
                     }
-                    Glide.with(this).load(coverUrl).into(profile_cover)
+                    Glide.with(this).load(coverUrl).placeholder(R.drawable.loading_image).into(profile_cover)
                 } else {
-                    coverUrl = "" + R.drawable.cover_picture_placeholder
+                    coverUrl = R.drawable.cover_picture_placeholder.toString()
                 }
-                when(currentState) {
+                when (currentState) {
                     0 -> {
                         action_btn.text = "Loading"
                         action_btn.isEnabled = false
@@ -259,7 +379,75 @@ class ProfileActivity : AppCompatActivity(),
             } else {
                 Toast.makeText(this, profileResponse.message, Toast.LENGTH_LONG).show()
             }
+            deleteProfileFromLocalDb()
+            saveProfileToLocalDb(profileResponse.profile!!)
         })
+    }
+
+    private fun deleteProfileFromLocalDb() {
+        Log.d(TAG, "deleteProfileFromLocalDb: called")
+        lifecycleScope.launch {
+            localViewModel.deleteProfileFromLocalDb()
+        }
+    }
+
+    private fun saveProfileToLocalDb(profile: Profile) {
+        Log.d(TAG, "saveProfileToLocalDb: $profile")
+        lifecycleScope.launch {
+            localViewModel.saveProfileToLocalDb(profile)
+        }
+    }
+
+    private fun getProfileDataFromLocalDb() {
+        scope.launch {
+            val profileFromLocalDb = localViewModel.getProfileFromLocalDb()
+            Log.d(TAG, "getProfileDataFromLocalDb: $profileFromLocalDb")
+            
+            withContext(Dispatchers.Main) {
+
+                collapsing_toolbar.title = profileFromLocalDb.name
+                profileUrl = profileFromLocalDb.profileUrl
+                coverUrl = profileFromLocalDb.coverUrl
+                currentState = profileFromLocalDb.state!!.toInt()
+
+                if (!profileUrl!!.isEmpty()) {
+                    val profileUri = Uri.parse(profileUrl)
+                    // https://www.fb.com
+                    // www.fb.com (this part is called authority)
+                    if (profileUri.authority == null) {
+                        profileUrl = BASE_URL + profileUrl
+                    }
+                    Glide.with(this@ProfileActivity).load(profileUrl).into(profile_image)
+                } else {
+                    profileUrl = R.drawable.default_profile_placeholder.toString()
+                }
+
+                if (!coverUrl!!.isEmpty()) {
+                    val coverUri = Uri.parse(coverUrl)
+                    // https://www.fb.com
+                    // www.fb.com (this part is called authority)
+                    if (coverUri.authority == null) {
+                        coverUrl = BASE_URL + coverUrl
+                    }
+                    Glide.with(this@ProfileActivity).load(coverUrl).into(profile_cover)
+                } else {
+                    coverUrl = R.drawable.cover_picture_placeholder.toString()
+                }
+
+                when (currentState) {
+                    0 -> {
+                        action_btn.text = "Loading"
+                        action_btn.isEnabled = false
+                    }
+                    1 -> action_btn.text = "Friends"
+                    2 -> action_btn.text = "Cancel Request"
+                    3 -> action_btn.text = "Accept or Cancel"
+                    4 -> action_btn.text = "Send Request"
+                    5 -> action_btn.text = "Edit Profile"
+                }
+                action_btn.isEnabled = false
+            }
+        }
     }
 
     private fun loadProfilePosts() {
@@ -284,9 +472,7 @@ class ProfileActivity : AppCompatActivity(),
 //                postAdapter?.updateList(postResponse.posts)
 
                 if (isFirstLoading) {
-                    postAdapter = PostAdapter(this, postItems, currentUserId!!, isPostEditable)
-                    recyclerView.adapter = postAdapter
-                    postAdapter?.setOnPostMoreAction(this)
+                    postAdapter?.notifyDataSetChanged()
                 } else {
                     postAdapter?.itemRangeInserted(postItems.size, postResponse.posts.size)
                 }
@@ -304,14 +490,73 @@ class ProfileActivity : AppCompatActivity(),
                 }
                 showToast(postResponse.message)
             }
+            if (isDataAvailable) {
+                deleteProfilePostListTolocalDb()
+                saveProfilePostListToLocalDb(postItems)
+9            }
         })
+    }
+
+    private fun saveProfilePostListToLocalDb(postItems: MutableList<Post>) {
+        val profilePosts = postItems.map {
+            ProfilePost(it.postId, it.postUserId, it.post, it.statusImage, it.statusTime, it.privacy, it.uid, it.name,
+                it.profileUrl, it.loveCount, it.careCount, it.wowCount, it.sadCount, it.angryCount, it.likeCount,
+                it.hahaCount, it.commentCount, it.reactionType
+            )
+        }
+        Log.d(TAG, "saveProfilePostListToLocalDb: ${profilePosts.size}")
+        lifecycleScope.launch {
+            localViewModel.saveProfilePostListToLocalDb(profilePosts)
+        }
+    }
+
+    private fun deleteProfilePostListTolocalDb() {
+        Log.d(TAG, "deleteProfilePostListTolocalDb: called")
+        lifecycleScope.launch {
+            localViewModel.deleteProfilePostListFromLocalDb()
+        }
+    }
+
+    private fun getProfilePostListFromLocalDb() {
+
+        scope2.launch {
+            val profilePosts = localViewModel.getProfilePostListFromLocalDb()
+            Log.d(TAG, "getProfilePostListFromLocalDb: ${profilePosts.size}")
+
+            withContext(Dispatchers.Main) {
+                profilePostAdapter = ProfilePostAdapter(
+                    this@ProfileActivity,
+                    profilePosts.toMutableList(),
+                    currentUserId!!,
+                    isPostEditable
+                )
+                recyclerView.adapter = profilePostAdapter
+            }
+        }
+
+/*        val handler = Handler()
+        thread {
+            val profilePosts = localViewModel.getProfilePostListFromLocalDb()
+            Log.d(TAG, "getProfilePostListFromLocalDb: ${profilePosts.size}")
+            handler.post {
+                profilePostAdapter = ProfilePostAdapter(
+                    this@ProfileActivity,
+                    profilePosts.toMutableList(),
+                    currentUserId!!,
+                    isPostEditable
+                )
+                recyclerView.adapter = profilePostAdapter
+            }
+        }*/
+
     }
 
     private fun loadProfileOptionButton() {
         action_btn.setOnClickListener {
             action_btn.isEnabled = false
             if (currentState == 5) {
-                val options: Array<CharSequence> = arrayOf("Change Cover Image", "Change Profile Image", "Change User Name")
+                val options: Array<CharSequence> =
+                    arrayOf("Change Cover Image", "Change Profile Image", "Change User Name")
                 val builder = AlertDialog.Builder(this).apply {
                     setTitle("Choose Options")
                     setCancelable(false)
@@ -343,9 +588,10 @@ class ProfileActivity : AppCompatActivity(),
                             performFriendAction()
                         }
                     })
-                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
-
-                    })
+                    setNegativeButton(
+                        "Cancel",
+                        DialogInterface.OnClickListener { dialogInterface, i ->
+                        })
                 }
                 val dialog = builder.create()
                 dialog.setOnDismissListener {
@@ -353,7 +599,8 @@ class ProfileActivity : AppCompatActivity(),
                 }
                 dialog.show()
             } else if (currentState == 3) {
-                val options: Array<CharSequence> = arrayOf("Accept Friend Request", "Cancel Friend Request")
+                val options: Array<CharSequence> =
+                    arrayOf("Accept Friend Request", "Cancel Friend Request")
                 val builder = AlertDialog.Builder(this).apply {
                     setTitle("Choose Options")
                     setCancelable(false)
@@ -365,9 +612,11 @@ class ProfileActivity : AppCompatActivity(),
                             performFriendAction()
                         }
                     })
-                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
+                    setNegativeButton(
+                        "Cancel",
+                        DialogInterface.OnClickListener { dialogInterface, i ->
 
-                    })
+                        })
                 }
                 val dialog = builder.create()
                 dialog.setOnDismissListener {
@@ -383,9 +632,11 @@ class ProfileActivity : AppCompatActivity(),
                             performFriendAction()
                         }
                     })
-                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
-                        dialogInterface.dismiss()
-                    })
+                    setNegativeButton(
+                        "Cancel",
+                        DialogInterface.OnClickListener { dialogInterface, i ->
+                            dialogInterface.dismiss()
+                        })
                 }
                 val dialog = builder.create()
                 dialog.setOnDismissListener {
@@ -401,9 +652,11 @@ class ProfileActivity : AppCompatActivity(),
                             performFriendAction()
                         }
                     })
-                    setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->
-                        dialogInterface.dismiss()
-                    })
+                    setNegativeButton(
+                        "Cancel",
+                        DialogInterface.OnClickListener { dialogInterface, i ->
+                            dialogInterface.dismiss()
+                        })
                 }
                 val dialog = builder.create()
                 dialog.setOnDismissListener {
@@ -416,32 +669,33 @@ class ProfileActivity : AppCompatActivity(),
 
     private fun performFriendAction() {
         progressDialog.show()
-        val performAction = PerformAction(currentState.toString(), FirebaseAuth.getInstance().uid, userId)
-        profileViewModel.performFriendAction(performAction)?.observe(this, Observer { generalResponse ->
-            progressDialog.hide()
+        val performAction =
+            PerformAction(currentState.toString(), FirebaseAuth.getInstance().uid, userId)
+        profileViewModel.performFriendAction(performAction)
+            ?.observe(this, Observer { generalResponse ->
+                progressDialog.hide()
 //            Toast.makeText(this, generalResponse.message, Toast.LENGTH_LONG).show()
-            Snackbar.make(rootView, generalResponse.message+"", Snackbar.LENGTH_LONG).show()
-            if (generalResponse.status == 200) {
-                action_btn.isEnabled = true
-                if (currentState == 4) {
-                    currentState = 2
-                    action_btn.text = "Cancel Request"
-                } else if (currentState == 3) {
-                    currentState = 1
-                    action_btn.text = "Friends"
-                } else if (currentState == 2) {
-                    currentState = 4
-                    action_btn.text = "Send Request"
-                } else if (currentState == 1) {
-                    currentState = 4
-                    action_btn.text = "Send Request"
+                Snackbar.make(rootView, generalResponse.message + "", Snackbar.LENGTH_LONG).show()
+                if (generalResponse.status == 200) {
+                    action_btn.isEnabled = true
+                    if (currentState == 4) {
+                        currentState = 2
+                        action_btn.text = "Cancel Request"
+                    } else if (currentState == 3) {
+                        currentState = 1
+                        action_btn.text = "Friends"
+                    } else if (currentState == 2) {
+                        currentState = 4
+                        action_btn.text = "Send Request"
+                    } else if (currentState == 1) {
+                        currentState = 4
+                        action_btn.text = "Send Request"
+                    } else {
+                        action_btn.isEnabled = false
+                        action_btn.text = "Error"
+                    }
                 }
-                else {
-                    action_btn.isEnabled = false
-                    action_btn.text = "Error"
-                }
-            }
-        })
+            })
     }
 
     private fun selectImage() {
@@ -452,15 +706,16 @@ class ProfileActivity : AppCompatActivity(),
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-            if (ImagePicker.shouldHandle(requestCode, resultCode, data)) {
-                val selectedImage: Image = ImagePicker.getFirstImageOrNull(data)
-                try {
-                    compressedImageFile = Compressor(this).setQuality(50).compressToFile(File(selectedImage.path))
-                    uploadImageWithName(compressedImageFile)
-                } catch (e : IOException) {
-                    Toast.makeText(this, "Image Picker Failed !", Toast.LENGTH_SHORT).show()
-                }
+        if (ImagePicker.shouldHandle(requestCode, resultCode, data)) {
+            val selectedImage: Image = ImagePicker.getFirstImageOrNull(data)
+            try {
+                compressedImageFile =
+                    Compressor(this).setQuality(50).compressToFile(File(selectedImage.path))
+                uploadImageWithName(compressedImageFile)
+            } catch (e: IOException) {
+                Toast.makeText(this, "Image Picker Failed !", Toast.LENGTH_SHORT).show()
             }
+        }
     }
 
     private fun uploadImageWithName(compressedImageFile: File?) {
@@ -537,20 +792,20 @@ class ProfileActivity : AppCompatActivity(),
         val nameEditText = EditText(this)
         nameEditText.hint = "Enter your name..."
         val dialog: AlertDialog = AlertDialog.Builder(this)
-                .setTitle("Change name")
-                .setView(nameEditText)
-                .setPositiveButton("Change", DialogInterface.OnClickListener { dialogInterface, i ->
-                    val nameTxt = nameEditText.text.toString()
-                    if (!nameTxt.isEmpty()) {
-                        enteredName = nameTxt
-                        uploadImageWithName(null)
-                    } else {
-                        nameEditText.error = "field empty"
-                        nameEditText.requestFocus()
-                    }
-                })
-                .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i ->  })
-                .create()
+            .setTitle("Change name")
+            .setView(nameEditText)
+            .setPositiveButton("Change", DialogInterface.OnClickListener { dialogInterface, i ->
+                val nameTxt = nameEditText.text.toString()
+                if (!nameTxt.isEmpty()) {
+                    enteredName = nameTxt
+                    uploadImageWithName(null)
+                } else {
+                    nameEditText.error = "field empty"
+                    nameEditText.requestFocus()
+                }
+            })
+            .setNegativeButton("Cancel", DialogInterface.OnClickListener { dialogInterface, i -> })
+            .create()
         dialog.show()
     }
 
@@ -562,14 +817,21 @@ class ProfileActivity : AppCompatActivity(),
         newReactionType: String,
         position: Int
     ) {
-        val performReaction = PerformReaction(uId, postId.toString(), postOwnerId, previousReactionType, newReactionType)
-        profileViewModel.performReaction(performReaction)?.observe(this, Observer { reactionResponse ->
-            if (reactionResponse.status == 200) {
-                postAdapter?.updatePostAfterReaction(position, reactionResponse.reaction!!)
-            } else {
-                showToast(reactionResponse.message)
-            }
-        })
+        val performReaction = PerformReaction(
+            uId,
+            postId.toString(),
+            postOwnerId,
+            previousReactionType,
+            newReactionType
+        )
+        profileViewModel.performReaction(performReaction)
+            ?.observe(this, Observer { reactionResponse ->
+                if (reactionResponse.status == 200) {
+                    postAdapter?.updatePostAfterReaction(position, reactionResponse.reaction!!)
+                } else {
+                    showToast(reactionResponse.message)
+                }
+            })
     }
 
     override fun onCommentAdded(position: Int) {
@@ -592,15 +854,16 @@ class ProfileActivity : AppCompatActivity(),
         val snackBar =
             Snackbar.make(rootView, "Confirm delete ? Or swipe to cancel", Snackbar.LENGTH_LONG)
         snackBar.setAction(
-            "YES", {
-//                Log.d(TAG, "deletePost: $postId | $mAdapterPosition")
-                profileViewModel.deletePost(postId.toString())?.observe(this, Observer {
+            "YES"
+        ) {
+            //                Log.d(TAG, "deletePost: $postId | $mAdapterPosition")
+            profileViewModel.deletePost(postId.toString())?.observe(this, Observer {
                 showToast(it.message)
                 if (it.status == 200) {
                     postAdapter?.notifyItemRemoved(mAdapterPosition)
                 }
             })
-        })
+        }
         snackBar.setAnimationMode(Snackbar.ANIMATION_MODE_SLIDE)
         snackBar.show()
 
