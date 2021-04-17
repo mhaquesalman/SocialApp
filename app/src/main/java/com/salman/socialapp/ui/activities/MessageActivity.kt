@@ -6,7 +6,9 @@ import android.os.Bundle
 import android.text.SpannableString
 import android.text.Spanned
 import android.text.style.TypefaceSpan
+import android.view.MenuItem
 import android.view.View
+import android.view.WindowManager
 import android.widget.RelativeLayout
 import android.widget.TextView
 import androidx.appcompat.app.ActionBar
@@ -36,7 +38,8 @@ class MessageActivity : AppCompatActivity() {
             val actionBar = supportActionBar
             val tv = TextView(applicationContext)
             val typeface =  ResourcesCompat.getFont(this, R.font.aclonica)
-            val lp = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT)
+            val lp = RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,
+                RelativeLayout.LayoutParams.WRAP_CONTENT)
             tv.layoutParams = lp
             tv.setText("SocialApp")
             tv.setTextSize(22f)
@@ -48,8 +51,16 @@ class MessageActivity : AppCompatActivity() {
         }
 //        supportActionBar?.setTitle("Messages")
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
 
         initialization()
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            finish()
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun initialization() {

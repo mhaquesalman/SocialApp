@@ -1,6 +1,7 @@
 package com.salman.socialapp.ui.fragments
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -10,14 +11,18 @@ import android.view.ViewGroup
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.gson.Gson
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.FirebaseUserInfoAdapter
 import com.salman.socialapp.model.FirebaseUserInfo
+import com.salman.socialapp.ui.activities.MessageActivity
+import com.salman.socialapp.ui.activities.OutgoingInvitationActivity
 import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.ChatViewModel
+import kotlinx.android.synthetic.main.fragment_message.*
 import kotlinx.android.synthetic.main.fragment_recent.*
 
-class RecentFragment : Fragment() {
+class RecentFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
     lateinit var mContext: Context
     var recentChatList: MutableList<FirebaseUserInfo> = ArrayList()
     lateinit var firebaseUserInfoAdapter: FirebaseUserInfoAdapter
@@ -63,12 +68,15 @@ class RecentFragment : Fragment() {
         recentRV.layoutManager = LinearLayoutManager(mContext)
         firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, recentChatList)
         recentRV.adapter = firebaseUserInfoAdapter
+        firebaseUserInfoAdapter.setIOcallsetup(this)
 
         fetchRecentChats()
     }
 
     private fun fetchRecentChats() {
+        (activity as MessageActivity).showProgressBar()
         chatViewModel.fetchRecentChats().observe(viewLifecycleOwner, Observer {
+            (activity as MessageActivity).hideProgressBar()
             recentChatList.clear()
             recentChatList.addAll(it)
             firebaseUserInfoAdapter.notifyDataSetChanged()
@@ -76,6 +84,7 @@ class RecentFragment : Fragment() {
         })
 
         chatViewModel.getToastObserver().observe(viewLifecycleOwner, Observer {
+            (activity as MessageActivity).hideProgressBar()
             mContext.showToast(it)
         })
     }
@@ -110,5 +119,36 @@ class RecentFragment : Fragment() {
 
     companion object {
         fun getInstance() = RecentFragment()
+    }
+
+    override fun initiateAudioCall(firebaseUserInfo: FirebaseUserInfo) {
+        val mIntent = Intent(mContext, OutgoingInvitationActivity::class.java)
+        mIntent.putExtra("user", firebaseUserInfo)
+        mIntent.putExtra("type", "audio")
+        startActivity(mIntent)
+    }
+
+    override fun initiatevideoCall(firebaseUserInfo: FirebaseUserInfo) {
+        val mIntent = Intent(mContext, OutgoingInvitationActivity::class.java)
+        mIntent.putExtra("user", firebaseUserInfo)
+        mIntent.putExtra("type", "video")
+        startActivity(mIntent)
+    }
+
+    override fun onMultipleUsersAction(isMulipleUserSelected: Boolean) {
+        if (isMulipleUserSelected) {
+            val selectedUsers = firebaseUserInfoAdapter.getSelectedUsers()
+            if (selectedUsers.size >= 2)
+                conference_btn.visibility = View.VISIBLE
+            conference_btn.setOnClickListener {
+                val intent = Intent(mContext, OutgoingInvitationActivity::class.java)
+                intent.putExtra("selectedUsers", Gson().toJson(selectedUsers))
+                intent.putExtra("type", "video")
+                intent.putExtra("isMultiple", true)
+                startActivity(intent)
+            }
+        } else {
+            conference_btn.visibility = View.GONE
+        }
     }
 }

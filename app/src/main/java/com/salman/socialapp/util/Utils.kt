@@ -8,8 +8,10 @@ import android.os.Build
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.salman.socialapp.model.Friend
 import com.salman.socialapp.model.UserInfo
 import com.salman.socialapp.ui.activities.MY_LANGUAGE
+import java.io.*
 import java.lang.reflect.Type
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -26,7 +28,7 @@ private const val CURRENT_USER = "user"
 const val ADDRESS = "www.google.com"
 const val PORT = 80
 const val TIMEOUT = 1500
-
+const val FILENAME_V1 = "Chats.data"
 class Utils(val context: Context) {
 
     fun addUserToSharedPref(userInfo: UserInfo) {
@@ -118,6 +120,26 @@ class Utils(val context: Context) {
                 true
             } catch (e: Exception) {
                 false
+            }
+        }
+
+        fun getDataFile(context: Context) = File(context.filesDir, FILENAME_V1)
+
+        fun writeFriendListToFile(context: Context, friendList: List<Friend>)  {
+            val outputStream = FileOutputStream(getDataFile(context))
+            ObjectOutputStream(outputStream).use {
+                it.writeObject(friendList)
+            }
+        }
+
+        fun readFriendListFromFile(context: Context): List<Friend>? {
+            val dataFile = getDataFile(context)
+            if (!dataFile.exists()) {
+                return null
+            }
+            val inputStream = FileInputStream(getDataFile(context))
+            ObjectInputStream(inputStream).use {
+                return it.readObject() as List<Friend>
             }
         }
 

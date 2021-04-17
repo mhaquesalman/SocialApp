@@ -6,23 +6,33 @@ import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.RelativeLayout
+import android.widget.ImageView
 import android.widget.TextView
-import androidx.core.view.marginTop
+import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.salman.socialapp.R
 import com.salman.socialapp.model.FirebaseUserInfo
 import com.salman.socialapp.network.BASE_URL
 import com.salman.socialapp.ui.activities.SendMessageActivity
+import com.salman.socialapp.util.showToast
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlinx.android.synthetic.main.item_firebase_user.view.*
 
 class FirebaseUserInfoAdapter(
     val context: Context,
-    val recentChatUserList: MutableList<FirebaseUserInfo>,
+    val firebaseUserList: MutableList<FirebaseUserInfo>,
     val onlineStatus: Boolean = false
 ) : RecyclerView.Adapter<FirebaseUserInfoAdapter.RecentChatViewHolder>() {
+
+    private var ioCallSetup: IOCallSetup? = null
+    private var selectedUsers: MutableList<FirebaseUserInfo> = ArrayList()
+
+    fun setIOcallsetup(callSetup: IOCallSetup) {
+        ioCallSetup = callSetup
+    }
+
+    fun getSelectedUsers() = selectedUsers
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecentChatViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_firebase_user, parent, false)
@@ -30,7 +40,7 @@ class FirebaseUserInfoAdapter(
     }
 
     override fun onBindViewHolder(holder: RecentChatViewHolder, position: Int) {
-        val user = recentChatUserList.get(position)
+        val user = firebaseUserList.get(position)
 
         holder.userName.text = user.name
 
@@ -71,27 +81,86 @@ class FirebaseUserInfoAdapter(
             }
 
 
+        holder.audioCallBtn.setOnClickListener {
+            ioCallSetup?.initiateAudioCall(firebaseUserList.get(position))
+        }
 
-        holder.item.setOnClickListener {
+        holder.videoCallBtn.setOnClickListener {
+            ioCallSetup?.initiatevideoCall(firebaseUserList.get(position))
+        }
+
+        holder.msgButton.setOnClickListener {
             val mIntent = Intent(context, SendMessageActivity::class.java)
             mIntent.also {
                 it.putExtra("userId", user.id)
                 it.putExtra("name", user.name)
                 it.putExtra("profileUrl", user.image)
+                it.putExtra("token", user.token)
             }
             context.startActivity(mIntent)
+        }
+
+        holder.item.setOnLongClickListener {
+            if (!holder.userSelected.isVisible){
+                selectedUsers.add(firebaseUserList.get(position))
+                holder.showUserSelected()
+//                ioCallSetup?.onMultipleUsersAction(true)
+            } else {
+                context.showToast("already selected")
+            }
+            true
+        }
+
+        holder.item.setOnClickListener {
+            if (holder.userSelected.isVisible) {
+                selectedUsers.remove(firebaseUserList.get(position))
+                holder.hideUserSelected()
+                if (selectedUsers.size <= 1) {
+                    ioCallSetup?.onMultipleUsersAction(false)
+                }
+            } else {
+                if (selectedUsers.size >= 1) {
+                    selectedUsers.add(firebaseUserList.get(position))
+                    holder.showUserSelected()
+                    ioCallSetup?.onMultipleUsersAction(true)
+                }
+            }
         }
     }
 
     override fun getItemCount(): Int {
-        return recentChatUserList.size
+        return firebaseUserList.size
     }
 
     inner class RecentChatViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val userName: TextView = itemView.user_name
         val userImage: CircleImageView = itemView.user_image
         val onlineStatus: TextView = itemView.online_status
+        val msgButton: ImageView = itemView.msg_btn
+        val audioCallBtn: ImageView = itemView.audio_call_btn
+        val videoCallBtn: ImageView = itemView.video_call_btn
+        val userSelected: ImageView = itemView.user_selected
         val item: View = itemView
+
+        fun showUserSelected() {
+            userSelected.visibility = View.VISIBLE
+            msgButton.visibility = View.GONE
+            audioCallBtn.visibility = View.GONE
+            videoCallBtn.visibility = View.GONE
+        }
+
+        fun hideUserSelected() {
+            userSelected.visibility = View.GONE
+            msgButton.visibility = View.VISIBLE
+            audioCallBtn.visibility = View.VISIBLE
+            videoCallBtn.visibility = View.VISIBLE
+        }
+    }
+
+    interface IOCallSetup {
+        fun initiateAudioCall(firebaseUserInfo: FirebaseUserInfo)
+        fun initiatevideoCall(firebaseUserInfo: FirebaseUserInfo)
+        fun onMultipleUsersAction(isMulipleUserSelected: Boolean)
     }
 
 }

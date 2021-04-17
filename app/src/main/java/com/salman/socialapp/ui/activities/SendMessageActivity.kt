@@ -11,8 +11,9 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.ItemTouchHelper
@@ -27,6 +28,8 @@ import com.salman.socialapp.adapters.MessageAdapter
 import com.salman.socialapp.model.Chat
 import com.salman.socialapp.network.BASE_URL
 import com.salman.socialapp.util.Converter
+import com.salman.socialapp.util.hide
+import com.salman.socialapp.util.show
 import com.salman.socialapp.util.showToast
 import com.theartofdev.edmodo.cropper.CropImage
 import com.theartofdev.edmodo.cropper.CropImageView
@@ -39,6 +42,7 @@ class SendMessageActivity : AppCompatActivity() {
     var userId: String? = ""
     var userName: String? = null
     var profileUrl: String? = null
+    var token: String? = ""
     lateinit var chatList: MutableList<Chat>
     var firebaseUser: FirebaseUser? = null
     var reference: DatabaseReference? = null
@@ -82,18 +86,56 @@ class SendMessageActivity : AppCompatActivity() {
 
     }
 
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.send_message_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.audio_call_menu -> {
+                setupAudioCalling()
+            }
+            R.id.video_call_menu -> {
+                setupVideoCalling()
+            }
+        }
+        return true
+    }
+
+    private fun setupAudioCalling() {
+        val mIntent = Intent(this, OutgoingInvitationActivity::class.java)
+        mIntent.putExtra("userId", userId)
+        mIntent.putExtra("username", userName)
+        mIntent.putExtra("profileUrl", profileUrl)
+        mIntent.putExtra("token", token)
+        mIntent.putExtra("type", "audio")
+        startActivity(mIntent)
+    }
+
+    private fun setupVideoCalling() {
+        val mIntent = Intent(this, OutgoingInvitationActivity::class.java)
+        mIntent.putExtra("userId", userId)
+        mIntent.putExtra("username", userName)
+        mIntent.putExtra("profileUrl", profileUrl)
+        mIntent.putExtra("token", token)
+        mIntent.putExtra("type", "video")
+        startActivity(mIntent)
+    }
+
     private fun getDataFromIntent(it: Intent) {
-        if (
-            it.hasExtra("userId") &&
+        if (it.hasExtra("userId") &&
             it.hasExtra("name") &&
-            it.hasExtra("profileUrl")
+            it.hasExtra("profileUrl") &&
+            it.hasExtra("token")
         ) {
             userId = it.getStringExtra("userId")
             userName = it.getStringExtra("name")
             profileUrl = it.getStringExtra("profileUrl")
+            token = it.getStringExtra("token")
             Log.d(TAG, "data from app")
-        } else if (
-            it.hasExtra("from_user_id") &&
+        }
+        else if (it.hasExtra("from_user_id") &&
             it.hasExtra("from_user_name") &&
             it.hasExtra("from_user_image")
         ) {
@@ -101,8 +143,8 @@ class SendMessageActivity : AppCompatActivity() {
             userName = it.getStringExtra("from_user_name")
             profileUrl = it.getStringExtra("from_user_image")
             Log.d(TAG, "data from background")
-        } else if (
-            it.hasExtra("fromUserId") &&
+        }
+        else if (it.hasExtra("fromUserId") &&
             it.hasExtra("fromUserName") &&
             it.hasExtra("fromUserImage")
         ) {
@@ -110,7 +152,8 @@ class SendMessageActivity : AppCompatActivity() {
             userName = it.getStringExtra("fromUserName")
             profileUrl = it.getStringExtra("fromUserImage")
             Log.d(TAG, "data from foreground")
-        } else {
+        }
+        else {
             Log.d(TAG, "data from nowhere")
         }
     }
@@ -193,10 +236,12 @@ class SendMessageActivity : AppCompatActivity() {
     }
 
     private fun readMessages(currentUserId: String?, userId: String?) {
+        progress.show()
         val chatRef = FirebaseDatabase.getInstance().getReference("chats")
         chatRef.addValueEventListener(object : ValueEventListener {
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
+                progress.hide()
                 chatList.clear()
                 for (snapshot in dataSnapshot.children) {
                     val chat = snapshot.getValue(Chat::class.java)

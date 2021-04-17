@@ -1,6 +1,11 @@
 package com.salman.socialapp.model
 
-class FirebaseUserInfo {
+import android.os.Parcel
+import android.os.Parcelable
+import kotlinx.android.parcel.Parcelize
+
+
+class FirebaseUserInfo() : Parcelable {
 
     private var _id: String = ""
     var id: String
@@ -43,15 +48,21 @@ class FirebaseUserInfo {
             _image = value
         }
 
-    constructor(id: String, token: String, status: String, name: String, image: String) {
+    constructor(parcel: Parcel) : this() {
+        _id = parcel.readString()!!
+        _token = parcel.readString()!!
+        _status = parcel.readString()!!
+        _name = parcel.readString()!!
+        _image = parcel.readString()!!
+    }
+
+    constructor(id: String, token: String, status: String, name: String, image: String) : this() {
         _id = id
         _token = token
         _status = status
         _name = name
         _image = image
     }
-
-    constructor()
 
     override fun toString(): String {
         return "{FirebaseUserInfo: " +
@@ -60,5 +71,27 @@ class FirebaseUserInfo {
                 "status= $status" +
                 "name= $name " +
                 "image= $image}"
+    }
+
+    override fun writeToParcel(parcel: Parcel, flags: Int) {
+        parcel.writeString(_id)
+        parcel.writeString(_token)
+        parcel.writeString(_status)
+        parcel.writeString(_name)
+        parcel.writeString(_image)
+    }
+
+    override fun describeContents(): Int {
+        return 0
+    }
+
+    companion object CREATOR : Parcelable.Creator<FirebaseUserInfo> {
+        override fun createFromParcel(parcel: Parcel): FirebaseUserInfo {
+            return FirebaseUserInfo(parcel)
+        }
+
+        override fun newArray(size: Int): Array<FirebaseUserInfo?> {
+            return arrayOfNulls(size)
+        }
     }
 }

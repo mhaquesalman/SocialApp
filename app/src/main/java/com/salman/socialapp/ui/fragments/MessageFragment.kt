@@ -1,6 +1,7 @@
 package com.salman.socialapp.ui.fragments
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import android.util.Log
@@ -17,23 +18,26 @@ import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.gson.Gson
 import com.salman.socialapp.R
 import com.salman.socialapp.adapters.FirebaseUserInfoAdapter
 import com.salman.socialapp.model.FirebaseUserInfo
 import com.salman.socialapp.model.Friend
 import com.salman.socialapp.ui.activities.MessageActivity
+import com.salman.socialapp.ui.activities.OutgoingInvitationActivity
+import com.salman.socialapp.util.Utils
 import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import kotlinx.android.synthetic.main.fragment_message.*
 
 private const val TAG = "MessageFragment"
-class MessageFragment : Fragment() {
+class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
     lateinit var mContext: Context
     lateinit var mainViewModel: MainViewModel
     lateinit var firebaseUserInfoAdapter: FirebaseUserInfoAdapter
     var friendList: MutableList<FirebaseUserInfo> = ArrayList()
-    var friends: List<Friend> = emptyList()
+    var friends: List<Friend> = ArrayList()
     var userId: String? = null
 
     override fun onAttach(context: Context) {
@@ -86,29 +90,32 @@ class MessageFragment : Fragment() {
         mainViewModel = ViewModelProvider(mContext as FragmentActivity, ViewModelFactory()).get(MainViewModel::class.java)
         messageRV.setHasFixedSize(true)
         messageRV.layoutManager = LinearLayoutManager(mContext)
+        firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
+        messageRV.adapter = firebaseUserInfoAdapter
+        firebaseUserInfoAdapter.setIOcallsetup(this)
     }
 
     private fun loadFriends() {
         (activity as MessageActivity).showProgressBar()
         mainViewModel.loadFriends(FirebaseAuth.getInstance().uid!!)?.observe(viewLifecycleOwner, Observer { friendResponse ->
-            if (friendResponse.status == 200) {
+                if (friendResponse.status == 200) {
 //                friendList.clear()
-                val friends: List<Friend> = friendResponse.result!!.friends
-                this.friends = friends
+                    val friends: List<Friend> = friendResponse.result!!.friends
+                    this.friends = friends
 //                friendList.addAll(friends)
-                loadFriendsFromFirebase(friends)
+                    loadFriendsFromFirebase()
 //                friendsAdapter.updateList(friends)
 //                if (friends.size == 0)
 //                    defaultTV.visibility = View.VISIBLE
 //                else
 //                    defaultTV.visibility = View.GONE
-            } else {
-                mContext.showToast(friendResponse.message)
-            }
-        })
+                } else {
+                    mContext.showToast(friendResponse.message)
+                }
+            })
     }
 
-    private fun loadFriendsFromFirebase(friends: List<Friend>) {
+    private fun loadFriendsFromFirebase() {
         val dataRef = FirebaseDatabase.getInstance().getReference("fusers")
 
         dataRef.addValueEventListener(object : ValueEventListener {
@@ -123,11 +130,12 @@ class MessageFragment : Fragment() {
                         }
                     }
                 }
-                firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
-                messageRV.adapter = firebaseUserInfoAdapter
+                firebaseUserInfoAdapter.notifyDataSetChanged()
 
-                if (friends.size == 0) defaultTV.visibility = View.VISIBLE
-                else defaultTV.visibility = View.GONE
+                if (friends.size == 0)
+                    defaultTV.visibility = View.VISIBLE
+                else
+                    defaultTV.visibility = View.GONE
             }
             override fun onCancelled(error: DatabaseError) {
                 mContext.showToast(error.message)
@@ -152,10 +160,8 @@ class MessageFragment : Fragment() {
                         }
                     }
                 }
-                firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
                 // refresh adapter after searching
-//                firebaseUserInfoAdapter.notifyDataSetChanged()
-                messageRV.adapter = firebaseUserInfoAdapter
+                firebaseUserInfoAdapter.notifyDataSetChanged()
 
                 if (friends.size == 0) defaultTV.visibility = View.VISIBLE
                 else defaultTV.visibility = View.GONE
@@ -171,7 +177,7 @@ class MessageFragment : Fragment() {
             if (!TextUtils.isEmpty(s!!.trim())) {
                 searchFriendsFromFirebase(s)
             } else {
-                loadFriendsFromFirebase(friends)
+                loadFriendsFromFirebase()
             }
             return false
         }
@@ -180,7 +186,7 @@ class MessageFragment : Fragment() {
             if (!TextUtils.isEmpty(s!!.trim())) {
                 searchFriendsFromFirebase(s)
             } else {
-                loadFriendsFromFirebase(friends)
+                loadFriendsFromFirebase()
             }
             return false
         }
@@ -188,5 +194,37 @@ class MessageFragment : Fragment() {
 
     companion object {
         fun getInstance()= MessageFragment()
+    }
+
+    override fun initiateAudioCall(firebaseUserInfo: FirebaseUserInfo) {
+        val mIntent = Intent(mContext, OutgoingInvitationActivity::class.java)
+        mIntent.putExtra("user", firebaseUserInfo)
+        mIntent.putExtra("type", "audio")
+        startActivity(mIntent)
+    }
+
+    override fun initiatevideoCall(firebaseUserInfo: FirebaseUserInfo) {
+        val mIntent = Intent(mContext, OutgoingInvitationActivity::class.java)
+        mIntent.putExtra("user", firebaseUserInfo)
+        mIntent.putExtra("type", "video")
+        startActivity(mIntent)
+    }
+
+    override fun onMultipleUsersAction(isMulipleUserSelected: Boolean) {
+        Log.d(TAG, "initiateAudioCall: $isMulipleUserSelected")
+        if (isMulipleUserSelected) {
+            val selectedUsers = firebaseUserInfoAdapter.getSelectedUsers()
+            if (selectedUsers.size >= 2)
+                conference_btn.visibility = View.VISIBLE
+            conference_btn.setOnClickListener {
+                val intent = Intent(mContext, OutgoingInvitationActivity::class.java)
+                intent.putExtra("selectedUsers", Gson().toJson(selectedUsers))
+                intent.putExtra("type", "video")
+                intent.putExtra("isMultiple", true)
+                startActivity(intent)
+            }
+        } else {
+            conference_btn.visibility = View.GONE
+        }
     }
 }

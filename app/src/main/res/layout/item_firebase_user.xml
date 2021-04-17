@@ -3,6 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_marginBottom="4dp">
 
     <RelativeLayout
@@ -18,12 +19,24 @@
             android:src="@drawable/default_profile_placeholder"
             android:scaleType="centerCrop"/>
 
+        <ImageView
+            android:layout_width="15dp"
+            android:layout_height="15dp"
+            android:id="@+id/user_selected"
+            android:src="@drawable/ic_call_accept"
+            android:background="@color/green"
+            android:visibility="invisible"
+            tools:visibility="visible"
+            android:layout_alignBottom="@id/user_image"
+            android:layout_alignRight="@id/user_image"/>
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:id="@+id/user_name"
             android:layout_toEndOf="@id/user_image"
             android:text="username"
+            android:maxLength="30"
             android:textColor="@android:color/black"
             android:layout_marginTop="5dp"
             android:textStyle="bold" />
@@ -39,6 +52,32 @@
             android:text="online"
             android:textStyle="italic|bold"
             android:textColor="@color/green"/>
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:id="@+id/msg_btn"
+            android:src="@drawable/ic_messenger"
+            app:tint="@android:color/holo_blue_dark"
+            android:layout_toLeftOf="@id/audio_call_btn"
+            android:layout_marginRight="10dp"/>
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:id="@+id/audio_call_btn"
+            android:src="@drawable/ic_call_audio"
+            app:tint="@android:color/holo_blue_dark"
+            android:layout_toLeftOf="@id/video_call_btn"
+            android:layout_marginRight="10dp"/>
+
+        <ImageView
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:id="@+id/video_call_btn"
+            android:src="@drawable/ic_call_video"
+            app:tint="@android:color/holo_blue_dark"
+            android:layout_alignParentRight="true" />
 
     </RelativeLayout>
 
