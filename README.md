@@ -1,5 +1,34 @@
 # SocialApp
-Small social application project.
+Small social application project, it was built for the learning purpose.
+
+<h4 style='margin-top:0in;margin-right:0in;margin-bottom:8.0pt;margin-left:0in;line-height:100%;font-size:25px;color:blue;font-family:"Calibri","sans-serif";'>Features</h4>
+
+<ul style="list-style-type: undefined;">
+    <li>Login with Gmail</li>
+    <li>Story (Add/View/Delete)</li>
+    <li>Post (Create/Read/Update/Delete)similar to Facebook news feed</li>
+    <li>Comment &amp; Sub-Comment (Create/Read/Delete)</li>
+    <li>Send/Cancel/Accept/Reject friend request</li>
+    <li>Search users, friends</li>
+    <li>Facebook look alike profile (Edit)</li>
+    <li>Facebook look alike reaction system</li>
+    <li>Notification for comment, like on a post, sent friend request.</li>
+    <li>Messaging with text and images to a user if that user exists in the friend list</li>
+    <li>Audio and Video call to a user if that user exists in the friend list</li>
+</ul>
+
+<h4 style='margin-top:0in;margin-right:0in;margin-bottom:8.0pt;margin-left:0in;line-height:100%;font-size:25px;font-family:"Calibri","sans-serif";'>Technologies and libraries</h4>
+
+<ul style="list-style-type: undefined;">
+    <li>Kotlin</li>
+    <li>PHP, Firebase real time database for storing data</li>
+    <li>Room, File (save in internal storage) for storing locally to use some features while not connected to internet</li>
+    <li>Firebase cloud function for messaging and notification</li>
+    <li>Shimmer library, Expandable floating library, Swipe refresh library, Image cropper library, Image preview library, Story progress view library, jitseMeet library (implementing calling features) and material design library (Bottom Sheet)</li>
+    <li>Coroutines, Broadcast receiver, Live data, MVVM, Dagger hilt</li>
+</ul>
+
+<h4 style='margin-top:0in;margin-right:0in;margin-bottom:8.0pt;margin-left:0in;line-height:100%;font-size:25px;font-family:"Calibri","sans-serif";'>Project Screenshots</h4>
 
 <table>
   <tr>
