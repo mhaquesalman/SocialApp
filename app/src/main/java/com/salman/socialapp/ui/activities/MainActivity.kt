@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Typeface
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
@@ -12,6 +13,7 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -83,10 +85,21 @@ class MainActivity : AppCompatActivity(),
         // get user from sharedRef
         getUserFromSharedPref()
 
+        init()
+
+    }
+
+    private fun init() {
         mainViewModel = ViewModelProvider(this, ViewModelFactory()).get(MainViewModel::class.java)
 
         CommentsBottomDialog.setIOnCommentDeletePostUpdate(this)
         CommentRepliesBottomDialog.setIOnCommentDeletePostUpdate(this)
+
+        fab.apply {
+            setTypeface(Typeface.BOLD)
+            // set font family for expandable fab text
+            setTypeface(ResourcesCompat.getFont(context, R.font.abril_fatface)!!)
+        }
 
         fab.setOnClickListener {
             startActivity(Intent(this, PostUploadActivity::class.java)
@@ -97,7 +110,6 @@ class MainActivity : AppCompatActivity(),
         toolbar_search.setOnClickListener {
             startActivity(Intent(this, SearchActivity::class.java))
         }
-
     }
 
     private fun setMenuTintColor(toolbar: Toolbar?) {
@@ -146,11 +158,11 @@ class MainActivity : AppCompatActivity(),
             when(item.itemId) {
                 R.id.newsFeedFragment -> {
                     setFragment(newsFeedFragment)
-                    return@setOnNavigationItemSelectedListener true
+//                    return@setOnNavigationItemSelectedListener true
                 }
                 R.id.friendsFragment -> {
                     setFragment(friendsFragment)
-                    return@setOnNavigationItemSelectedListener true
+//                    return@setOnNavigationItemSelectedListener true
                 }
                 R.id.profileActivity -> {
                     startActivity(Intent(this, ProfileActivity::class.java)
@@ -163,6 +175,14 @@ class MainActivity : AppCompatActivity(),
                 }
             }
             return@setOnNavigationItemSelectedListener true
+        }
+
+        bottomNavigation.setOnNavigationItemReselectedListener { item ->
+            when(item.itemId) {
+                R.id.newsFeedFragment -> {
+                    showToast("newsfeed loaded")
+                }
+            }
         }
     }
 
@@ -220,6 +240,14 @@ class MainActivity : AppCompatActivity(),
         progressbar.visibility = View.GONE
     }
 
+    fun fabCollapse() {
+        fab.collapse()
+    }
+
+    fun fabExpand() {
+        fab.expand()
+    }
+
     override fun performAction(position: Int, profileId: String, operationType: Int) {
         val currentUserId = FirebaseAuth.getInstance().uid
         showProgressBar()
@@ -254,10 +282,6 @@ class MainActivity : AppCompatActivity(),
 
     override fun onCommentDeletePostUpdate(position: Int) {
         newsFeedFragment.onCommentDelete(position)
-    }
-
-    companion object {
-
     }
 
 }

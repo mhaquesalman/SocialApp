@@ -3,6 +3,7 @@ apply plugin: 'com.google.gms.google-services'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
+apply plugin: "androidx.navigation.safeargs.kotlin"
 apply plugin: 'dagger.hilt.android.plugin'
 
 android {
@@ -16,6 +17,8 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        // Required when setting minSdkVersion to 20 or lower
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -26,6 +29,9 @@ android {
     }
 
     compileOptions {
+        // Flag to enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
+        // Sets Java compatibility to Java 8
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -51,20 +57,32 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    // Firebase
+    // Firebase analytics
     implementation "com.google.firebase:firebase-analytics-ktx:17.4.3"
+    // Firebase authentication
     implementation "com.google.firebase:firebase-auth-ktx:19.3.1"
     implementation "com.google.android.gms:play-services-auth:18.0.0"
+    // Firebase Cloud Messaging
     implementation 'com.google.firebase:firebase-messaging-ktx:21.0.1'
     // For Real time database
     implementation 'com.google.firebase:firebase-database:19.6.0'
+    // Firebase Storage
+    implementation 'com.google.firebase:firebase-storage:19.1.1'
 
-    // Retrofit & okhttp3
+    // Navigation Component
+    def navigationVersion = '2.3.0'
+    implementation "androidx.navigation:navigation-fragment-ktx:$navigation_version"
+    implementation "androidx.navigation:navigation-ui-ktx:$navigation_version"
+
+    // Retrofit
     implementation "com.squareup.retrofit2:retrofit:2.9.0"
     // GsonConverterFactory
     implementation "com.squareup.retrofit2:converter-gson:2.9.0"
-    //ScalarsConverterFactory
+    // ScalarsConverterFactory
     implementation 'com.squareup.retrofit2:converter-scalars:2.9.0'
+    // Moshi
+    implementation 'com.squareup.moshi:moshi-kotlin:1.8.0'
+    // Okhttp3 logging incerceptor
     implementation "com.squareup.okhttp3:logging-interceptor:4.2.1"
 
     // Glide
@@ -101,21 +119,34 @@ dependencies {
     // Circular imageview
     implementation 'de.hdodenhof:circleimageview:3.1.0'
 
-    //Image cropper
+    // Image cropper
     implementation 'com.theartofdev.edmodo:android-image-cropper:2.8.0'
 
-    //Dagger - Hilt
-    implementation "com.google.dagger:hilt-android:2.28-alpha"
-    kapt "com.google.dagger:hilt-android-compiler:2.28-alpha"
+    // Dagger - Hilt
+    implementation "com.google.dagger:hilt-android:$hilt_version"
+    kapt "com.google.dagger:hilt-android-compiler:$hilt_version"
 
-    //Dagger - Hilt - ViewModel
-    implementation "androidx.hilt:hilt-lifecycle-viewmodel:1.0.0-alpha01"
-    kapt "androidx.hilt:hilt-compiler:1.0.0-alpha01"
+    // Dagger - Hilt - ViewModel
+    def hilt_viewmodel_version = "1.0.0-alpha01"
+    implementation "androidx.hilt:hilt-lifecycle-viewmodel:$hilt_viewmodel_version"
+    kapt "androidx.hilt:hilt-compiler:$hilt_viewmodel_version"
+
+    // Expandable floating action button
+    implementation 'com.github.imtuann:FloatingActionButtonExpandable:1.1.2'
+
+    // Story progress view
+    implementation 'com.github.shts:StoriesProgressView:3.0.0'
+
+    // Shimmer loader library
+    implementation 'com.facebook.shimmer:shimmer:0.4.0'
 
     // Reaction design library
     implementation project (':reactbutton')
 
     // Jitsi Meet
     implementation ('org.jitsi.react:jitsi-meet-sdk:2.8.2') { transitive = true }
+
+    // Dependency to enable support for the new language APIs
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.0.9'
 
 }

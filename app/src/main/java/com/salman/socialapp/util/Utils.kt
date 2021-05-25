@@ -5,12 +5,18 @@ import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
+import android.preference.PreferenceManager
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.salman.socialapp.model.Chat
+import com.salman.socialapp.model.FirebaseUserInfo
 import com.salman.socialapp.model.Friend
 import com.salman.socialapp.model.UserInfo
 import com.salman.socialapp.ui.activities.MY_LANGUAGE
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import java.io.*
 import java.lang.reflect.Type
 import java.net.InetSocketAddress
@@ -25,10 +31,13 @@ import java.util.*
 private const val TAG = "Utils"
 private const val SHARED_PREF = "logged_in_user"
 private const val CURRENT_USER = "user"
+private const val KEY_SAVED_AT = "savedAt"
+const val MINIUMUM_INTERVAL = 6
 const val ADDRESS = "www.google.com"
 const val PORT = 80
 const val TIMEOUT = 1500
-const val FILENAME_V1 = "Chats.data"
+const val FILENAME_V1 = "Friends.data"
+const val FILENAME_V2 = "Chats.data"
 class Utils(val context: Context) {
 
     fun addUserToSharedPref(userInfo: UserInfo) {
@@ -51,6 +60,16 @@ class Utils(val context: Context) {
         val editor = sharedPreferences.edit()
         editor.remove(CURRENT_USER)
         editor.commit()
+    }
+
+    fun setLastSavedAt(savedAt: String) {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        sharedPreferences.edit().putString(KEY_SAVED_AT, savedAt).apply()
+    }
+
+    fun getLastSavedAt(): String? {
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        return sharedPreferences.getString(KEY_SAVED_AT, null)
     }
 
     companion object {
@@ -123,24 +142,77 @@ class Utils(val context: Context) {
             }
         }
 
-        fun getDataFile(context: Context) = File(context.filesDir, FILENAME_V1)
+        private fun getDataFile(context: Context) = File(context.filesDir, FILENAME_V1)
 
         fun writeFriendListToFile(context: Context, friendList: List<Friend>)  {
-            val outputStream = FileOutputStream(getDataFile(context))
+/*            val outputStream = FileOutputStream(getDataFile(context))
             ObjectOutputStream(outputStream).use {
                 it.writeObject(friendList)
-            }
+            }*/
+
+            val moshi = Moshi.Builder().build()
+            val type = Types.newParameterizedType(List::class.java, Friend::class.java)
+            val adapter: JsonAdapter<List<Friend>> = moshi.adapter(type)
+            val json = adapter.toJson(friendList)
+            val file = File(context.filesDir, FILENAME_V1)
+            file.writeText(json, Charsets.UTF_8)
+        }
+
+        fun removeFriendListFromFile(context: Context, json: String)  {
+/*            val outputStream = FileOutputStream(getDataFile(context))
+            ObjectOutputStream(outputStream).use {
+                it.writeObject(emptyList)
+            }*/
+
+            val file = File(context.filesDir, FILENAME_V1)
+            file.writeText(json, Charsets.UTF_8)
         }
 
         fun readFriendListFromFile(context: Context): List<Friend>? {
-            val dataFile = getDataFile(context)
+/*            val dataFile = getDataFile(context)
             if (!dataFile.exists()) {
                 return null
             }
             val inputStream = FileInputStream(getDataFile(context))
             ObjectInputStream(inputStream).use {
                 return it.readObject() as List<Friend>
+            }*/
+
+            val file = File(context.filesDir, FILENAME_V1)
+            if (!file.exists()) {
+                return null
             }
+            val moshi = Moshi.Builder().build()
+            val type = Types.newParameterizedType(List::class.java, Friend::class.java)
+            val adapter: JsonAdapter<List<Friend>> = moshi.adapter(type)
+            val friends = adapter.fromJson(file.readText())
+            return friends
+        }
+
+        fun saveChatListToFile(context: Context, chats: List<Chat>) {
+            val moshi = Moshi.Builder().build()
+            val type = Types.newParameterizedType(List::class.java, Chat::class.java)
+            val adapter: JsonAdapter<List<Chat>> = moshi.adapter(type)
+            val json = adapter.toJson(chats)
+            val file = File(context.filesDir, FILENAME_V2)
+            file.writeText(json, Charsets.UTF_8)
+        }
+
+        fun removeChatListFromFile(context: Context, json: String) {
+            val file = File(context.filesDir, FILENAME_V2)
+            file.writeText(json, Charsets.UTF_8)
+        }
+
+        fun readChatListFromFile(context: Context): List<Chat>? {
+            val file = File(context.filesDir, FILENAME_V2)
+            if (!file.exists()) {
+                return null
+            }
+            val moshi = Moshi.Builder().build()
+            val type = Types.newParameterizedType(List::class.java, Chat::class.java)
+            val adapter: JsonAdapter<List<Chat>> = moshi.adapter(type)
+            val chats = adapter.fromJson(file.readText())
+            return chats
         }
 
         /*fun isNetWorkAvailable(context: Context): Boolean {

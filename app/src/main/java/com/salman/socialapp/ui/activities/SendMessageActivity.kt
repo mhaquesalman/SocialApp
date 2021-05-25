@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.util.Util
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.database.*
@@ -27,14 +28,16 @@ import com.salman.socialapp.R
 import com.salman.socialapp.adapters.MessageAdapter
 import com.salman.socialapp.model.Chat
 import com.salman.socialapp.network.BASE_URL
-import com.salman.socialapp.util.Converter
-import com.salman.socialapp.util.hide
-import com.salman.socialapp.util.show
-import com.salman.socialapp.util.showToast
+import com.salman.socialapp.util.*
+import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import com.theartofdev.edmodo.cropper.CropImage
 import com.theartofdev.edmodo.cropper.CropImageView
 import kotlinx.android.synthetic.main.activity_send_message.*
 import java.io.InputStream
+import java.time.LocalDateTime
+import java.time.temporal.ChronoUnit
 
 private const val TAG = "SendMessageActivity"
 class SendMessageActivity : AppCompatActivity() {
@@ -48,6 +51,7 @@ class SendMessageActivity : AppCompatActivity() {
     var reference: DatabaseReference? = null
     var seenEventListener: ValueEventListener? = null
     lateinit var messageAdapter: MessageAdapter
+    lateinit var utils: Utils
     var uri: Uri? = null
     var imageSent = false
 
@@ -74,7 +78,7 @@ class SendMessageActivity : AppCompatActivity() {
 
         initialization()
 
-        readMessages(currentUserId, userId)
+        readChatList()
 
         onSendBtnClicked()
 
@@ -124,30 +128,23 @@ class SendMessageActivity : AppCompatActivity() {
     }
 
     private fun getDataFromIntent(it: Intent) {
-        if (it.hasExtra("userId") &&
-            it.hasExtra("name") &&
-            it.hasExtra("profileUrl") &&
-            it.hasExtra("token")
-        ) {
+        if (it.hasExtra("userId") && it.hasExtra("name") &&
+            it.hasExtra("profileUrl") && it.hasExtra("token")) {
             userId = it.getStringExtra("userId")
             userName = it.getStringExtra("name")
             profileUrl = it.getStringExtra("profileUrl")
             token = it.getStringExtra("token")
             Log.d(TAG, "data from app")
         }
-        else if (it.hasExtra("from_user_id") &&
-            it.hasExtra("from_user_name") &&
-            it.hasExtra("from_user_image")
-        ) {
+        else if (it.hasExtra("from_user_id") && it.hasExtra("from_user_name") &&
+            it.hasExtra("from_user_image")) {
             userId = it.getStringExtra("from_user_id")
             userName = it.getStringExtra("from_user_name")
             profileUrl = it.getStringExtra("from_user_image")
             Log.d(TAG, "data from background")
         }
-        else if (it.hasExtra("fromUserId") &&
-            it.hasExtra("fromUserName") &&
-            it.hasExtra("fromUserImage")
-        ) {
+        else if (it.hasExtra("fromUserId") && it.hasExtra("fromUserName") &&
+            it.hasExtra("fromUserImage")) {
             userId = it.getStringExtra("fromUserId")
             userName = it.getStringExtra("fromUserName")
             profileUrl = it.getStringExtra("fromUserImage")
@@ -194,6 +191,7 @@ class SendMessageActivity : AppCompatActivity() {
     }
 
     private fun initialization() {
+        utils = Utils(applicationContext)
         chatList = ArrayList()
         // userid
         firebaseUser = FirebaseAuth.getInstance().currentUser
@@ -204,6 +202,23 @@ class SendMessageActivity : AppCompatActivity() {
         linearLayoutManager.stackFromEnd = true
         recycler_view.setHasFixedSize(true)
         recycler_view.layoutManager = linearLayoutManager
+
+    }
+
+    private fun readChatList() {
+        val lastSavedAt = utils.getLastSavedAt()
+        val readChatListFromFile = Utils.readChatListFromFile(applicationContext)
+        if (readChatListFromFile == null || (lastSavedAt != null && isFetchNeeded(LocalDateTime.parse(lastSavedAt)))) {
+            readMessages(currentUserId, userId)
+        } else {
+            chatList.addAll(readChatListFromFile.toMutableList())
+            messageAdapter = MessageAdapter(this@SendMessageActivity, chatList, currentUserId!!, profileUrl!!)
+            recycler_view.adapter = messageAdapter
+        }
+    }
+
+    private fun isFetchNeeded(time: LocalDateTime): Boolean {
+        return ChronoUnit.HOURS.between(time, LocalDateTime.now()) > MINIUMUM_INTERVAL
     }
 
     private fun sendMessage(sender: String?, receiver: String?, message: String) {
@@ -241,7 +256,6 @@ class SendMessageActivity : AppCompatActivity() {
         chatRef.addValueEventListener(object : ValueEventListener {
 
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                progress.hide()
                 chatList.clear()
                 for (snapshot in dataSnapshot.children) {
                     val chat = snapshot.getValue(Chat::class.java)
@@ -252,9 +266,13 @@ class SendMessageActivity : AppCompatActivity() {
                         }
                     }
                 }
+                progress.hide()
                 messageAdapter = MessageAdapter(this@SendMessageActivity, chatList, currentUserId!!, profileUrl!!)
                 recycler_view.adapter = messageAdapter
 //                messageAdapter.notifyDataSetChanged()
+                Utils.removeChatListFromFile(applicationContext, "")
+                Utils.saveChatListToFile(applicationContext, chatList)
+                utils.setLastSavedAt(LocalDateTime.now().toString())
             }
 
             override fun onCancelled(error: DatabaseError) {

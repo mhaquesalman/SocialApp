@@ -7,7 +7,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.Handler
 import android.util.Log
 import android.util.Pair
 import android.view.View
@@ -54,8 +53,6 @@ import java.io.IOException
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
-import kotlin.concurrent.schedule
-import kotlin.concurrent.thread
 
 private const val TAG = "ProfileActivityClass"
 
@@ -89,6 +86,7 @@ class ProfileActivity : AppCompatActivity(),
     var isFirstLoading = true
     var isDataAvailable = true
     var isInternetConnectionEstablished = true
+    var loadAfterUpdate = false
     lateinit var postItems: MutableList<Post>
     private lateinit var profileViewModel: ProfileViewModel
 
@@ -101,6 +99,7 @@ class ProfileActivity : AppCompatActivity(),
     private val scope = CoroutineScope(Dispatchers.IO + CoroutineName("MyScope"))
     private val scope2 = CoroutineScope(Dispatchers.IO + CoroutineName("MyScope2"))
 
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
@@ -111,13 +110,32 @@ class ProfileActivity : AppCompatActivity(),
             super.onBackPressed()
         }
 
-
         // get user from sharedRef
         getUserFromSharedPref()
 
+        intent?.let {
+            getDataFromIntent(it)
+        }
 
-        if (intent != null)
-            userId = intent.getStringExtra(USER_ID)
+        // initialize fields
+        init()
+
+        // internet connected successfully
+        checkInternetConnection()
+
+        // view profile & cover picture
+        clickToSeeImage()
+
+        // refresh posts fetch from the net
+        refreshPosts()
+
+        // scroll for loading more posts
+        scrollToMorePosts()
+
+    }
+
+    private fun getDataFromIntent(it: Intent) {
+        userId = it.getStringExtra(USER_ID)
 
         if (userId.equals(FirebaseAuth.getInstance().uid)) {
             currentState = 5
@@ -127,27 +145,10 @@ class ProfileActivity : AppCompatActivity(),
             action_btn.isEnabled = false
             isPostEditable = false
         }
+    }
 
-        // initialize fields
-        initialization()
 
-        // internet connected successfully
-        checkInternetConnection()
-
-        // view profile & cover picture
-        clickToSeeImage()
-
-        swipe.setOnRefreshListener {
-            if (isInternetConnectionEstablished) {
-                offset = 0
-                isFirstLoading = true
-                loadProfilePosts()
-            } else {
-                showToast("Try connecting to the internet..")
-                swipe.isRefreshing = false
-            }
-        }
-
+    private fun scrollToMorePosts() {
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 if (isInternetConnectionEstablished) {
@@ -158,7 +159,6 @@ class ProfileActivity : AppCompatActivity(),
                 }
             }
         })
-
     }
 
     override fun onResume() {
@@ -185,6 +185,19 @@ class ProfileActivity : AppCompatActivity(),
 
     }
 
+    private fun refreshPosts() {
+        swipe.setOnRefreshListener {
+            if (isInternetConnectionEstablished) {
+                offset = 0
+                isFirstLoading = true
+                loadProfilePosts()
+            } else {
+                showToast("Try connecting to the internet..")
+                swipe.isRefreshing = false
+            }
+        }
+    }
+
     private fun checkInternetConnection() {
 
 /*        InternetConnection(object : InternetConnection.Consumer {
@@ -208,7 +221,6 @@ class ProfileActivity : AppCompatActivity(),
                 }
             }
         })*/
-
 
         InternetConnection { accept ->
             Log.d(TAG, "accept: $accept")
@@ -234,6 +246,7 @@ class ProfileActivity : AppCompatActivity(),
                 getProfilePostListFromLocalDb()
             }
         }
+
     }
 
     override fun onStop() {
@@ -241,14 +254,10 @@ class ProfileActivity : AppCompatActivity(),
 /*        offset = 0
         postItems.clear()
         isFirstLoading = true*/
-    }
-
-    override fun onPause() {
-        super.onPause()
         progressDialog.dismiss()
     }
 
-    private fun initialization() {
+    private fun init() {
 /*        progressDialog = ProgressDialog(this)
         progressDialog.setCancelable(false)
         progressDialog.setTitle("Loading")
@@ -268,6 +277,17 @@ class ProfileActivity : AppCompatActivity(),
         recyclerView.adapter = postAdapter
         postAdapter?.setOnPostMoreAction(this)
         recyclerView.layoutManager = LinearLayoutManager(this)
+
+        PostUploadActivity.setPostLoadingListener { isUpdated ->
+            if (isUpdated) {
+                offset = 0
+                isFirstLoading = true
+                postItems.clear()
+                postAdapter?.notifyDataSetChanged()
+                loadProfilePosts()
+            }
+        }
+
     }
 
     private fun getUserFromSharedPref() {
@@ -284,7 +304,7 @@ class ProfileActivity : AppCompatActivity(),
         val position = layoutManager.findLastCompletelyVisibleItemPosition()
         val numberOfItems = postAdapter!!.itemCount
         Log.d(TAG, "position: $position | numberOfItems: $numberOfItems")
-        return (position >= numberOfItems - 1)
+        return (position != -1 && position >= numberOfItems - 1)
     }
 
     private fun showProgressDiaglog() {
@@ -459,6 +479,7 @@ class ProfileActivity : AppCompatActivity(),
         params.put("current_state", currentState.toString())
 
         profileViewModel.loadProfilePosts(params)?.observe(this, Observer { postResponse ->
+            Log.d(TAG, "loadProfilePosts: $postResponse")
             progressbar.hide()
             if (postResponse.status == 200) {
 
@@ -493,7 +514,7 @@ class ProfileActivity : AppCompatActivity(),
             if (isDataAvailable) {
                 deleteProfilePostListTolocalDb()
                 saveProfilePostListToLocalDb(postItems)
-9            }
+            }
         })
     }
 

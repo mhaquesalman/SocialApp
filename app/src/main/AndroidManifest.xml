@@ -16,7 +16,9 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="true">
-        <activity android:name=".ui.activities.OutgoingInvitationActivity"></activity>
+        <activity android:name=".ui.activities.StoryActivity"></activity>
+        <activity android:name=".ui.activities.AddStoryActivity" />
+        <activity android:name=".ui.activities.OutgoingInvitationActivity" />
         <activity android:name=".ui.activities.IncomingInvitationActivity" />
         <activity
             android:name="com.theartofdev.edmodo.cropper.CropImageActivity"
@@ -47,7 +49,8 @@
         </activity>
         <activity
             android:name=".ui.activities.MainActivity"
-            android:label="">
+            android:label=""
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <action android:name="OPEN_MAIN_ACTIVITY" />

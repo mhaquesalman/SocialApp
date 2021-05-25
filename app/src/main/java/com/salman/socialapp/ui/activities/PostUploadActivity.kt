@@ -233,12 +233,19 @@ class PostUploadActivity : AppCompatActivity() {
                 }
             }
             val multipartBody = builder.build()
-            postUploadViewModel.updatePost(multipartBody)?.observe(this, Observer { postUpdateResponse ->
-                showToast(postUpdateResponse.message)
-                if (postUpdateResponse.status == 200) {
-                    onBackPressed()
-                }
-            })
+            postUploadViewModel.updatePost(multipartBody)?.observe(
+                this,
+                Observer { postUpdateResponse ->
+                    progressDialog.hide()
+                    showToast(postUpdateResponse.message)
+                    if (postUpdateResponse.status == 200) {
+//                    listener?.invoke(true)
+                        listener?.let {
+                            it(true)
+                        }
+                        finish()
+                    }
+                })
         } else {
             showToast("Status can't be empty !", Toast.LENGTH_SHORT)
         }
@@ -274,6 +281,14 @@ class PostUploadActivity : AppCompatActivity() {
                 imagePreview.visibility = View.GONE
                 Toast.makeText(this, "Image Picker Failed !", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    companion object {
+        private var listener: ((Boolean) -> Unit)? = null
+        fun setPostLoadingListener(mListener: (Boolean) ->Unit) {
+            listener = mListener
+            Log.d(TAG, "setPostLoadingListener: $listener")
         }
     }
 }

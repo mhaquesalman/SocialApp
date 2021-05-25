@@ -30,14 +30,18 @@ import com.salman.socialapp.util.showToast
 import com.salman.socialapp.viewmodels.MainViewModel
 import com.salman.socialapp.viewmodels.ViewModelFactory
 import kotlinx.android.synthetic.main.fragment_message.*
+import kotlin.collections.ArrayList
 
 private const val TAG = "MessageFragment"
 class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
     lateinit var mContext: Context
     lateinit var mainViewModel: MainViewModel
     lateinit var firebaseUserInfoAdapter: FirebaseUserInfoAdapter
+    lateinit var friends: List<Friend>
     var friendList: MutableList<FirebaseUserInfo> = ArrayList()
-    var friends: List<Friend> = ArrayList()
+    // java way of creating an empty array
+//    val emptyList: List<Friend> = Collections.emptyList<Friend>()
+    val emptyFriendList: List<Friend> = emptyList()
     var userId: String? = null
 
     override fun onAttach(context: Context) {
@@ -59,7 +63,7 @@ class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
         val view = inflater.inflate(R.layout.fragment_message, container, false)
 
         userId = FirebaseAuth.getInstance().currentUser?.uid
-        Log.d(TAG, "onCreateView: $userId")
+        Log.d(TAG, "userId: $userId")
 
         return view
     }
@@ -67,9 +71,20 @@ class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        initialization()
+        init()
 
-        loadFriends()
+        val readFriendListFromFile = Utils.readFriendListFromFile(mContext)
+        if (readFriendListFromFile == null) {
+            loadFriends()
+        } else {
+            loadFriendsFromFile(readFriendListFromFile)
+        }
+    }
+
+    private fun loadFriendsFromFile(friendsFromFile: List<Friend>) {
+        (activity as MessageActivity).showProgressBar()
+        this.friends = friendsFromFile
+        loadFriendsFromFirebase()
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -86,22 +101,33 @@ class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
         super.onCreateOptionsMenu(menu, inflater)
     }
 
-    private fun initialization() {
+    private fun init() {
         mainViewModel = ViewModelProvider(mContext as FragmentActivity, ViewModelFactory()).get(MainViewModel::class.java)
+        friends = ArrayList()
         messageRV.setHasFixedSize(true)
         messageRV.layoutManager = LinearLayoutManager(mContext)
         firebaseUserInfoAdapter = FirebaseUserInfoAdapter(mContext, friendList, true)
         messageRV.adapter = firebaseUserInfoAdapter
         firebaseUserInfoAdapter.setIOcallsetup(this)
+
+        swipe.setOnRefreshListener {
+            loadFriends()
+        }
     }
 
     private fun loadFriends() {
         (activity as MessageActivity).showProgressBar()
-        mainViewModel.loadFriends(FirebaseAuth.getInstance().uid!!)?.observe(viewLifecycleOwner, Observer { friendResponse ->
+        mainViewModel.loadFriends(FirebaseAuth.getInstance().uid!!)
+            ?.observe(viewLifecycleOwner, Observer { friendResponse ->
                 if (friendResponse.status == 200) {
 //                friendList.clear()
-                    val friends: List<Friend> = friendResponse.result!!.friends
-                    this.friends = friends
+                    if (swipe.isRefreshing) {
+                        this.friends = emptyFriendList
+                        firebaseUserInfoAdapter.notifyDataSetChanged()
+                        swipe.isRefreshing = false
+                    }
+                    if (friendResponse.result != null)
+                        this.friends = friendResponse.result.friends
 //                friendList.addAll(friends)
                     loadFriendsFromFirebase()
 //                friendsAdapter.updateList(friends)
@@ -112,6 +138,9 @@ class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
                 } else {
                     mContext.showToast(friendResponse.message)
                 }
+
+                Utils.removeFriendListFromFile(mContext, "")
+                Utils.writeFriendListToFile(mContext, friends)
             })
     }
 
@@ -120,7 +149,6 @@ class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
 
         dataRef.addValueEventListener(object : ValueEventListener {
             override fun onDataChange(dataSnapshot: DataSnapshot) {
-                (activity as MessageActivity).hideProgressBar()
                 friendList.clear()
                 for (snapshot in dataSnapshot.children) {
                     val firebaseUserInfo = snapshot.getValue(FirebaseUserInfo::class.java)
@@ -130,12 +158,14 @@ class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
                         }
                     }
                 }
+                (activity as MessageActivity).hideProgressBar()
                 firebaseUserInfoAdapter.notifyDataSetChanged()
 
                 if (friends.size == 0)
                     defaultTV.visibility = View.VISIBLE
                 else
                     defaultTV.visibility = View.GONE
+
             }
             override fun onCancelled(error: DatabaseError) {
                 mContext.showToast(error.message)
@@ -163,9 +193,12 @@ class MessageFragment : Fragment(), FirebaseUserInfoAdapter.IOCallSetup {
                 // refresh adapter after searching
                 firebaseUserInfoAdapter.notifyDataSetChanged()
 
-                if (friends.size == 0) defaultTV.visibility = View.VISIBLE
-                else defaultTV.visibility = View.GONE
+                if (friends.size == 0)
+                    defaultTV.visibility = View.VISIBLE
+                else
+                    defaultTV.visibility = View.GONE
             }
+
             override fun onCancelled(error: DatabaseError) {
                 mContext.showToast(error.message)
             }
